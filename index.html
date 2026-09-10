@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="點名系統">
+<meta name="theme-color" content="#F3F6F5">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231F6F5C'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'%3E✓%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231F6F5C'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'%3E✓%3C/text%3E%3C/svg%3E">
+<!-- Only takes effect once this file is hosted over https (e.g. GitHub Pages) —
+     harmless no-op when opened as a local file. -->
+<link rel="manifest" href="manifest.json">
+<title>點名系統</title>
+<style>
+  :root{
+    --bg:#F3F6F5;
+    --card:#FFFFFF;
+    --ink:#1B2430;
+    --ink-soft:#5B6672;
+    --line:#DFE5E3;
+    --present:#2F9E68;
+    --present-bg:#E4F5EC;
+    --leave:#C98A1E;
+    --leave-bg:#FBF0DC;
+    --absent:#D64545;
+    --absent-bg:#FBE6E6;
+    --parent:#2E6FB8;
+    --parent-bg:#E4ECF7;
+    --idle-bg:#EEF1F0;
+    --accent:#1F6F5C;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC",Segoe UI,Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  body{padding-bottom:88px;}
+  .tabular{font-variant-numeric:tabular-nums;}
+
+  header{position:sticky; top:0; z-index:20; background:var(--bg); padding:calc(14px + env(safe-area-inset-top)) 16px 10px; border-bottom:1px solid var(--line);}
+  .title-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+  .title-row h1{font-size:19px; margin:0; font-weight:700; letter-spacing:.02em;}
+  .icon-btn{border:none; background:var(--card); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; box-shadow:0 1px 2px rgba(0,0,0,.06); font-size:17px;}
+
+  .date-row{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .date-nav{width:36px; height:36px; border-radius:10px; border:1px solid var(--line); background:var(--card); font-size:16px; display:flex; align-items:center; justify-content:center;}
+  input[type=date]{flex:1; border:1px solid var(--line); background:var(--card); border-radius:10px; padding:8px 10px; font-size:15px; color:var(--ink); font-family:inherit;}
+  .date-label{flex:1; text-align:center; font-size:14px; color:var(--ink-soft);}
+
+  .summary{display:flex; gap:8px;}
+  .chip{flex:1; background:var(--card); border-radius:10px; padding:8px 6px; text-align:center; border:1px solid var(--line);}
+  .chip b{display:block; font-size:17px; line-height:1.3;}
+  .chip span{font-size:11px; color:var(--ink-soft);}
+  .chip.present b{color:var(--present);}
+  .chip.leave b{color:var(--leave);}
+  .chip.absent b{color:var(--absent);}
+  .chip.parent b{color:var(--parent);}
+
+  .filters{padding:10px 16px 0; display:flex; gap:8px; overflow-x:auto; scrollbar-width:none;}
+  .filters::-webkit-scrollbar{display:none;}
+  .filter-chip{flex:0 0 auto; padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); font-size:13px; color:var(--ink-soft); white-space:nowrap;}
+  .filter-chip.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+
+  .search{margin:10px 16px 4px;}
+  .search input{width:100%; border:1px solid var(--line); background:var(--card); border-radius:10px; padding:9px 12px; font-size:15px; font-family:inherit;}
+
+  .bulk-row{margin:8px 16px 4px; display:flex; gap:8px;}
+  .bulk-row button{flex:1; height:38px; border-radius:10px; border:1px solid var(--line); background:var(--card); font-size:13px; font-weight:600; color:var(--ink-soft); font-family:inherit;}
+  .bulk-row button:active{transform:scale(0.97);}
+  #btnMarkAllPresent{color:var(--present); border-color:#CFE8DA;}
+  #btnClearAll{color:var(--ink-soft);}
+
+  main{padding:8px 16px 24px;}
+  .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
+  .empty .big{font-size:32px; margin-bottom:8px;}
+  .empty button{margin-top:14px;}
+
+  .card{background:var(--card); border-radius:14px; padding:12px; margin-bottom:10px; display:flex; align-items:center; gap:10px; border:1px solid var(--line);}
+  .list-subhead{font-size:12.5px; font-weight:700; color:var(--ink-soft); margin:14px 2px 8px; padding-top:6px; border-top:1px solid var(--line);}
+  .list-subhead:first-child{margin-top:0; padding-top:0; border-top:none;}
+  .card .info{flex:1; min-width:0;}
+  .card .name{font-size:16px; font-weight:600; display:flex; align-items:center; gap:6px;}
+  .tag{font-size:11px; color:var(--accent); background:#E4F0EC; padding:2px 7px; border-radius:6px; font-weight:600;}
+  .card .meta{font-size:12.5px; color:var(--ink-soft); margin-top:2px; display:flex; gap:8px; align-items:center;}
+  .call{color:var(--accent); text-decoration:none; font-size:12.5px;}
+  .status-btn{flex:0 0 auto; min-width:64px; height:44px; border-radius:12px; border:none; font-size:14px; font-weight:700; background:var(--idle-bg); color:var(--ink-soft); transition:background-color .12s ease, color .12s ease, transform .08s ease; will-change:transform;}
+  .status-btn:active{transform:scale(0.92);}
+  .status-btn.present{background:var(--present-bg); color:var(--present);}
+  .status-btn.leave{background:var(--leave-bg); color:var(--leave);}
+  .status-btn.absent{background:var(--absent-bg); color:var(--absent);}
+  .status-btn.parent{background:var(--parent-bg); color:var(--parent);}
+  .edit-btn{flex:0 0 auto; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:16px;}
+
+  .fab-bar{position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--line); padding:10px 16px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px; z-index:20;}
+  .fab-bar button{flex:1; height:46px; border-radius:12px; border:none; font-size:14.5px; font-weight:700; font-family:inherit;}
+  .btn-primary{background:var(--accent); color:#fff;}
+  .btn-secondary{background:var(--card); color:var(--ink); border:1px solid var(--line) !important;}
+
+  .sheet-overlay{position:fixed; inset:0; background:rgba(20,26,24,.45); z-index:50; display:none; align-items:flex-end;}
+  .sheet-overlay.open{display:flex;}
+  .sheet{background:var(--bg); width:100%; max-height:86vh; overflow-y:auto; border-radius:18px 18px 0 0; padding:18px 18px calc(18px + env(safe-area-inset-bottom));}
+  .sheet h2{margin:0 0 4px; font-size:17px;}
+  .sheet .sub{font-size:12.5px; color:var(--ink-soft); margin-bottom:14px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:5px;}
+  .field input, .field textarea{width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font-size:15px; font-family:inherit; background:var(--card);}
+  .field textarea{min-height:110px; resize:vertical; line-height:1.5;}
+  .tabs{display:flex; gap:6px; margin-bottom:14px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:3px;}
+  .tabs button{flex:1; border:none; background:transparent; padding:8px; border-radius:8px; font-size:13.5px; font-family:inherit; color:var(--ink-soft);}
+  .tabs button.active{background:var(--accent); color:#fff; font-weight:600;}
+  .sheet-actions{display:flex; gap:10px; margin-top:6px;}
+  .sheet-actions button{flex:1; height:46px; border-radius:12px; border:none; font-size:14.5px; font-weight:700; font-family:inherit;}
+  .hint{font-size:12px; color:var(--ink-soft); background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; line-height:1.6; margin-bottom:12px;}
+  .danger{color:var(--absent);}
+
+  .hist-table{border-collapse:collapse; font-size:11.5px; white-space:nowrap;}
+
+  /* daily report — compact, screenshot-friendly single page */
+  .report-head{text-align:center; margin-bottom:10px;}
+  .report-head .rdate{font-size:16px; font-weight:700;}
+  .report-summary{display:flex; gap:6px; margin-bottom:10px;}
+  .report-summary .rchip{flex:1; text-align:center; border-radius:8px; padding:5px 2px; font-size:11px; background:var(--card); border:1px solid var(--line);}
+  .report-summary .rchip b{display:block; font-size:15px; line-height:1.3;}
+  .report-group{margin-bottom:8px;}
+  .report-group-title{font-size:11.5px; font-weight:700; color:var(--ink-soft); margin:6px 2px 3px; display:flex; align-items:center; gap:5px;}
+  .report-group-title .dot{width:7px; height:7px; border-radius:50%; display:inline-block;}
+  .report-names{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:6px 10px; font-size:12.5px; line-height:1.9; word-break:break-all;}
+  .report-names.empty-list{color:var(--ink-soft); font-style:normal;}
+  .hist-table th, .hist-table td{border:1px solid var(--line); padding:4px 6px; text-align:center;}
+  .hist-table th.hist-name, .hist-table td.hist-name{position:sticky; left:0; background:var(--bg); text-align:left; font-weight:600; z-index:2; min-width:88px;}
+  .hist-table th{background:var(--bg); font-weight:600; color:var(--ink-soft);}
+  .hist-mark{display:inline-block; width:18px; height:18px; line-height:18px; border-radius:5px; font-size:10.5px; font-weight:700;}
+  .hist-mark.present{background:var(--present-bg); color:var(--present);}
+  .hist-mark.leave{background:var(--leave-bg); color:var(--leave);}
+  .hist-mark.absent{background:var(--absent-bg); color:var(--absent);}
+  .hist-mark.parent{background:var(--parent-bg); color:var(--parent);}
+  .toast{position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:9px 10px 9px 16px; border-radius:999px; font-size:13px; z-index:60; opacity:0; transition:opacity .25s; display:flex; align-items:center; gap:10px; max-width:88vw; white-space:nowrap;}
+  .toast.show{opacity:1;}
+  .toast #toastMsg{overflow:hidden; text-overflow:ellipsis;}
+  .toast #toastAction{background:rgba(255,255,255,.18); color:#fff; border:none; border-radius:999px; padding:5px 12px; font-size:12.5px; font-weight:700; font-family:inherit; flex:0 0 auto;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title-row">
+    <h1>點名系統</h1>
+    <div style="display:flex; gap:8px;">
+      <button class="icon-btn" id="btnHistory" type="button">📅</button>
+      <button class="icon-btn" id="btnGroups" type="button">☰</button>
+    </div>
+  </div>
+  <div class="date-row">
+    <button class="date-nav" id="prevDay" type="button">‹</button>
+    <input type="date" id="dateInput">
+    <button class="date-nav" id="nextDay" type="button">›</button>
+    <button class="date-nav" id="todayBtn" style="width:auto; padding:0 10px; font-size:12.5px;" type="button">今天</button>
+  </div>
+  <div class="summary" id="summaryRow">
+    <div class="chip"><b class="tabular" id="cntTotal">0</b><span>總人數</span></div>
+    <div class="chip present"><b class="tabular" id="cntPresent">0</b><span>已到</span></div>
+    <div class="chip leave"><b class="tabular" id="cntLeave">0</b><span>請假</span></div>
+    <div class="chip absent"><b class="tabular" id="cntAbsent">0</b><span>未到</span></div>
+    <div class="chip parent"><b class="tabular" id="cntParent">0</b><span>家長接</span></div>
+  </div>
+  <div class="sub" id="summaryHint" style="display:none; text-align:center; margin-top:4px;"></div>
+</header>
+
+<div class="filters" id="modeRow" style="padding:10px 16px 0;">
+  <div class="filter-chip active" data-mode="group" id="modeGroup" style="border-radius:8px;">依年級</div>
+  <div class="filter-chip" data-mode="day" id="modeDay" style="border-radius:8px;">依接送日</div>
+</div>
+<div class="filters" id="filterRow"></div>
+<div class="search"><input type="text" id="searchInput" placeholder="搜尋姓名"></div>
+<div class="bulk-row" id="bulkRow">
+  <button id="btnMarkAllPresent" type="button">✓ 全部標記已到</button>
+  <button id="btnClearAll" type="button">↺ 清空重填</button>
+</div>
+
+<main id="list"></main>
+
+<div class="fab-bar">
+  <button class="btn-secondary" id="btnAdd" type="button">＋ 新增學生</button>
+  <button class="btn-primary" id="btnShare" type="button">複製今日名單</button>
+</div>
+
+<!-- Add / bulk import sheet -->
+<div class="sheet-overlay" id="addOverlay">
+  <div class="sheet">
+    <h2>新增學生</h2>
+    <div class="sub">可單筆新增，或整批貼上匯入</div>
+    <div class="tabs">
+      <button class="active" data-tab="single" type="button">單筆新增</button>
+      <button data-tab="bulk" type="button">整批匯入</button>
+    </div>
+
+    <div id="tabSingle">
+      <div class="field"><label>姓名</label><input type="text" id="inName" placeholder="例如：陳栢彥"></div>
+      <div class="field"><label>年級 / 分類</label><input type="text" id="inGroup" placeholder="例如：3年級"></div>
+      <div class="field"><label>接送日（選填）</label><input type="text" id="inDay" placeholder="例如：二五"></div>
+      <div class="field"><label>電話</label><input type="tel" id="inPhone" placeholder="例如：0925-515365"></div>
+      <div class="field"><label>備註（選填）</label><input type="text" id="inNote" placeholder="例如：佳音・文中"></div>
+      <div class="sheet-actions">
+        <button class="btn-secondary" id="cancelSingle" type="button">取消</button>
+        <button class="btn-primary" id="saveSingle" type="button">新增</button>
+      </div>
+    </div>
+
+    <div id="tabBulk" style="display:none;">
+      <div class="hint">每行一位學生，用逗號分隔：<br>姓名,年級,電話,接送日,備註（接送日、備註可省略）<br>例如：陳栢彥,3年級,0925-515365,二五,親自接送</div>
+      <div class="field"><textarea id="bulkText" placeholder="陳栢彥,3年級,0925-515365&#10;李語彣,3年級,0910-560446"></textarea></div>
+      <div class="sheet-actions">
+        <button class="btn-secondary" id="cancelBulk" type="button">取消</button>
+        <button class="btn-primary" id="saveBulk" type="button">匯入</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit student sheet -->
+<div class="sheet-overlay" id="editOverlay">
+  <div class="sheet">
+    <h2>編輯學生</h2>
+    <div class="field"><label>姓名</label><input type="text" id="editName"></div>
+    <div class="field"><label>年級 / 分類</label><input type="text" id="editGroup"></div>
+    <div class="field"><label>接送日（選填）</label><input type="text" id="editDay"></div>
+    <div class="field"><label>電話</label><input type="tel" id="editPhone"></div>
+    <div class="field"><label>備註（選填）</label><input type="text" id="editNote"></div>
+    <div class="sheet-actions">
+      <button class="btn-secondary danger" id="deleteStudent" type="button">刪除學生</button>
+      <button class="btn-primary" id="saveEdit" type="button">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- History sheet -->
+<div class="sheet-overlay" id="historyOverlay">
+  <div class="sheet" style="max-height:92vh;">
+    <h2>歷史紀錄</h2>
+    <div class="tabs" id="historyTabs">
+      <button data-htab="daily" class="active" type="button">當日報表</button>
+      <button data-htab="grid" type="button">月曆總覽</button>
+    </div>
+
+    <div id="dailyReportView">
+      <div class="date-row" style="margin-bottom:10px;">
+        <button class="date-nav" id="histPrevDay" type="button">‹</button>
+        <input type="date" id="histDateInput">
+        <button class="date-nav" id="histNextDay" type="button">›</button>
+      </div>
+      <div id="dailyReportBody">
+        <div class="empty" style="padding:30px 10px;">讀取中…</div>
+      </div>
+    </div>
+
+    <div id="gridView" style="display:none;">
+      <div class="sub" id="historySub">每天的點名資料都會保留，不會被覆蓋或清除</div>
+      <div id="historyBody" style="overflow-x:auto;">
+        <div class="empty" style="padding:30px 10px;">讀取中…</div>
+      </div>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="closeHistory" type="button">關閉</button>
+      <button class="btn-primary" id="shareLine" type="button" style="background:#06C755;">傳到 LINE</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastAction" style="display:none;" type="button"></button></div>
+
+<script>
+// ============================================================================
+// TEMPLATE CONFIG — this is the only block you need to change to spin up a
+// new school's version of this app. Everything below (SEED_DATA, RENAME_MAP)
+// is also school-specific and safe to replace/empty out for a new school.
+// The rest of the file (UI, storage, filtering, history, LINE share, etc.)
+// is generic and shouldn't need editing.
+// ============================================================================
+const CONFIG = {
+  appTitle: '點名系統',           // shown in the header and as the home-screen name
+  schoolId: 'template',  // change this per school/teacher deployment    // unique per school — keeps each school's saved
+                                  // data separate even if opened in the same browser
+};
+// Remember to also update <title> and the apple-mobile-web-app-title <meta> tag
+// near the top of the HTML — those two are static and can't be set from here.
+// ============================================================================
+
+// Storage: use Claude's built-in storage when running inside a Claude artifact
+// (so it syncs to your account); otherwise fall back to the browser's own
+// localStorage, so this page also works standalone — saved to your phone and
+// opened directly, with no internet or Claude needed.
+// K() namespaces every key with CONFIG.schoolId so different school versions
+// never collide with each other's saved data.
+function K(key){ return CONFIG.schoolId + ':' + key; }
+
+const Store = (function(){
+  const hasClaudeStorage = typeof window.storage !== 'undefined' && window.storage && typeof window.storage.get === 'function';
+  if(hasClaudeStorage) return window.storage;
+  const PREFIX = 'roll_call_app:';
+  return {
+    async get(key){
+      const raw = localStorage.getItem(PREFIX+key);
+      if(raw === null) throw new Error('not found: '+key);
+      return {key, value: raw, shared:false};
+    },
+    async set(key, value){
+      localStorage.setItem(PREFIX+key, value);
+      return {key, value, shared:false};
+    },
+    async delete(key){
+      localStorage.removeItem(PREFIX+key);
+      return {key, deleted:true, shared:false};
+    },
+    async list(prefix){
+      const keys = [];
+      for(let i=0; i<localStorage.length; i++){
+        const k = localStorage.key(i);
+        if(k && k.indexOf(PREFIX)===0){
+          const bare = k.slice(PREFIX.length);
+          if(!prefix || bare.indexOf(prefix)===0) keys.push(bare);
+        }
+      }
+      return {keys, prefix, shared:false};
+    }
+  };
+})();
+
+const STATUS_CYCLE = ['idle','present','leave','absent','parent'];
+const STATUS_LABEL = {idle:'未點', present:'已到', leave:'請假', absent:'未到', parent:'家長接'};
+
+const WEEKDAYS = ['一','二','三','四','五'];
+// Reads the free-text "day" field (e.g. '二五', '三五', '一四', '每天') and
+// returns which weekdays it covers, so a student can show up under every
+// individual weekday tab that applies to them.
+function parseDays(dayStr){
+  if(!dayStr) return [];
+  if(dayStr.includes('每天')) return WEEKDAYS.slice();
+  return WEEKDAYS.filter(w => dayStr.includes(w));
+}
+
+let roster = [];
+let attendance = {};
+let currentDate = todayStr();
+let currentFilter = 'all';
+let currentFilterMode = 'group'; // 'group' (年級) or 'day' (接送日)
+let editingId = null;
+
+// ============================================================================
+// SCHOOL-SPECIFIC DATA — 鎮北國小 (this school's version). To make a version
+// for a different school: replace SEED_DATA below with that school's roster,
+// and clear out RENAME_MAP (it's only here to fix this school's earlier
+// transcription mistakes without losing already-saved attendance history).
+// Also update CONFIG.schoolId above to something unique for the new school.
+// ============================================================================
+
+// Transcribed from the two uploaded photos, grouped by grade (from the class code)
+// for faster tapping. "note" keeps the original pickup info:
+// 深色 rows -> teacher's own pickup weekday; 白色 rows -> 佳音 shuttle branch.
+// Class-code corrections (old name -> new name) so already-saved students
+// get renamed in place instead of duplicated when SEED_DATA is updated.
+const RENAME_MAP = {
+  // e.g. '舊名字（舊班別）': '新名字（新班別）',
+};
+
+const SEED_DATA = [
+  // 新學校/新老師版本：從空白開始，用「新增學生」或「整批匯入」建立名單即可。
+  // 也可以先貼上完整名單當作範例：
+  // {name:'王小明（1-1班）', group:'1年級', phone:'0912-345678', day:'每天', note:''},
+];
+// END SCHOOL-SPECIFIC DATA — everything below this line is generic app logic.
+// ============================================================================
+
+function todayStr(){
+  const d = new Date();
+  const off = d.getTimezoneOffset();
+  const local = new Date(d.getTime() - off*60000);
+  return local.toISOString().slice(0,10);
+}
+
+function uid(){ return 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastAction').style.display = 'none';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 1600);
+}
+function showUndoToast(msg, actionLabel, onAction){
+  const t = document.getElementById('toast');
+  const btn = document.getElementById('toastAction');
+  document.getElementById('toastMsg').textContent = msg;
+  btn.textContent = actionLabel;
+  btn.style.display = 'inline-block';
+  btn.onclick = ()=>{
+    onAction();
+    t.classList.remove('show');
+    clearTimeout(toastTimer);
+  };
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+async function loadRoster(){
+  try{
+    const r = await Store.get(K('roster'), false);
+    roster = r ? JSON.parse(r.value) : [];
+  }catch(e){ roster = []; }
+}
+async function saveRoster(){
+  try{ await Store.set(K('roster'), JSON.stringify(roster), false); }
+  catch(e){ showToast('儲存失敗，請重試'); }
+}
+async function loadAttendance(date){
+  try{
+    const r = await Store.get(K('att:'+date), false);
+    attendance = r ? JSON.parse(r.value) : {};
+  }catch(e){ attendance = {}; }
+}
+
+// Saves are queued and run one-at-a-time, each writing the very latest
+// attendance snapshot. This prevents a slow save from finishing late and
+// overwriting a newer tap, and lets us flush immediately if the page
+// is about to close (screen lock, app switch, accidental back/close).
+let attSaveInFlight = false;
+let attSaveQueued = false;
+async function saveAttendance(date){
+  attSaveQueued = true;
+  if(attSaveInFlight) return;
+  attSaveInFlight = true;
+  while(attSaveQueued){
+    attSaveQueued = false;
+    const snapshot = JSON.stringify(attendance);
+    try{ await Store.set(K('att:'+date), snapshot, false); }
+    catch(e){ showToast('儲存失敗，請重試'); }
+  }
+  attSaveInFlight = false;
+}
+
+function groups(){
+  if(currentFilterMode === 'day'){
+    // fixed set: 週一..週五 — always shown, regardless of who's in the roster
+    return WEEKDAYS.slice();
+  }
+  const set = new Set(roster.map(s=>s.group).filter(Boolean));
+  const arr = Array.from(set);
+  // sort grade-like labels (1年級..6年級) numerically; anything else falls to the end
+  arr.sort((a,b)=>{
+    const na = parseInt(a), nb = parseInt(b);
+    const va = isNaN(na) ? 999 : na;
+    const vb = isNaN(nb) ? 999 : nb;
+    if(va !== vb) return va - vb;
+    return a.localeCompare(b, 'zh-Hant');
+  });
+  return arr;
+}
+
+function renderFilters(){
+  const row = document.getElementById('filterRow');
+  const gs = groups();
+  let html = `<div class="filter-chip ${currentFilter==='all'?'active':''}" data-g="all">全部</div>`;
+  gs.forEach(g=>{
+    const label = currentFilterMode === 'day' ? ('週'+g) : g;
+    html += `<div class="filter-chip ${currentFilter===g?'active':''}" data-g="${escapeHtml(g)}">${escapeHtml(label)}</div>`;
+  });
+  row.innerHTML = html;
+  row.querySelectorAll('.filter-chip').forEach(el=>{
+    el.addEventListener('click', ()=>{ currentFilter = el.dataset.g; renderFilters(); renderList(); renderSummary(); });
+  });
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderSummary(){
+  const items = getVisibleItems();
+  let present=0, leave=0, absent=0, parent=0;
+  items.forEach(s=>{
+    const st = attendance[s.id] || 'idle';
+    if(st==='present') present++;
+    else if(st==='leave') leave++;
+    else if(st==='absent') absent++;
+    else if(st==='parent') parent++;
+  });
+  document.getElementById('cntTotal').textContent = items.length;
+  document.getElementById('cntPresent').textContent = present;
+  document.getElementById('cntLeave').textContent = leave;
+  document.getElementById('cntAbsent').textContent = absent;
+  document.getElementById('cntParent').textContent = parent;
+
+  const hint = document.getElementById('summaryHint');
+  if(currentFilterMode === 'day' && currentFilter !== 'all'){
+    hint.style.display = 'block';
+    if(SPLIT_DAYS[currentFilter] !== undefined){
+      const am = items.filter(s => timeSlotForDay(s, currentFilter) === 'am').length;
+      const pm = items.filter(s => timeSlotForDay(s, currentFilter) === 'pm').length;
+      hint.textContent = `週${currentFilter}共 ${items.length} 位（上午 ${am} 位、下午 ${pm} 位），其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
+    } else {
+      hint.textContent = `週${currentFilter}共 ${items.length} 位，其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
+    }
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+// Pulls the class number out of a name like "陳栢彥（4-2班）" → 2.
+// Names without a dash (e.g. "簡梓秦（6班）") have no specific class, so
+// they sort first within their grade.
+function classSortKey(name){
+  const m = (name||'').match(/（\d+-?(\d*)班）/);
+  if(!m || !m[1]) return 0;
+  return parseInt(m[1]) || 0;
+}
+
+function getVisibleItems(){
+  const q = document.getElementById('searchInput').value.trim();
+  let items = roster.slice();
+  if(currentFilter !== 'all'){
+    if(currentFilterMode === 'day'){
+      items = items.filter(s => parseDays(s.day).includes(currentFilter));
+    } else {
+      items = items.filter(s => s.group === currentFilter);
+    }
+  }
+  if(q) items = items.filter(s=>s.name.includes(q));
+
+  // sort by grade, then class, then name — so the list always reads top to
+  // bottom the way a school roster would, regardless of which filter is active
+  items.sort((a,b)=>{
+    const ga = parseInt(a.group) || 999, gb = parseInt(b.group) || 999;
+    if(ga !== gb) return ga - gb;
+    const ca = classSortKey(a.name), cb = classSortKey(b.name);
+    if(ca !== cb) return ca - cb;
+    return a.name.localeCompare(b.name, 'zh-Hant');
+  });
+
+  return items;
+}
+
+// Some weekdays are split into a morning and an afternoon pickup shift,
+// with the cutoff grade depending on the day:
+//   週五 (Fri) — grade 5+ is afternoon
+//   週一 / 週四 (Mon/Thu) — grade 3+ is afternoon
+// A note/day explicitly containing "4:00" always forces afternoon, on any
+// split day, regardless of grade.
+const SPLIT_DAYS = { '五': 5, '一': 3, '四': 3 };
+function timeSlotForDay(s, dayChar){
+  const cutoff = SPLIT_DAYS[dayChar];
+  if(cutoff === undefined) return 'am'; // this weekday isn't split
+  const grade = parseInt(s.group) || 0;
+  if(grade >= cutoff) return 'pm';
+  if((s.note||'').includes('4:00') || (s.day||'').includes('4:00')) return 'pm';
+  return 'am';
+}
+
+function cardHtml(s){
+  const st = attendance[s.id] || 'idle';
+  return `<div class="card" data-id="${s.id}">
+      <div class="info">
+        <div class="name">${escapeHtml(s.name)} ${s.group?`<span class="tag">${escapeHtml(s.group)}</span>`:''}</div>
+        <div class="meta">
+          ${s.phone?`<a class="call" href="tel:${escapeHtml(s.phone.replace(/-/g,''))}">📞 ${escapeHtml(s.phone)}</a>`:'<span>未填電話</span>'}
+          ${s.note?`<span>・${escapeHtml(s.note)}</span>`:''}
+        </div>
+      </div>
+      <button class="edit-btn" data-edit="${s.id}" type="button">✎</button>
+      <button class="status-btn ${st}" data-toggle="${s.id}" type="button">${STATUS_LABEL[st]}</button>
+    </div>`;
+}
+
+function renderList(){
+  const list = document.getElementById('list');
+  const items = getVisibleItems();
+
+  if(roster.length === 0){
+    list.innerHTML = `<div class="empty"><div class="big">🚌</div>還沒有學生名單<br>點下方「新增學生」開始<button class="btn-primary" onclick="document.getElementById('btnAdd').click()" style="padding:10px 20px; border-radius:10px; border:none;" type="button">立即新增</button></div>`;
+    return;
+  }
+  if(items.length === 0){
+    list.innerHTML = `<div class="empty">找不到符合的學生</div>`;
+    return;
+  }
+
+  const isSplitDay = currentFilterMode === 'day' && SPLIT_DAYS[currentFilter] !== undefined;
+  if(isSplitDay){
+    const cutoff = SPLIT_DAYS[currentFilter];
+    const am = items.filter(s => timeSlotForDay(s, currentFilter) === 'am');
+    const pm = items.filter(s => timeSlotForDay(s, currentFilter) === 'pm');
+    const sub = (label, arr)=> arr.length
+      ? `<div class="list-subhead">${label}（${arr.length}）</div>${arr.map(cardHtml).join('')}`
+      : '';
+    list.innerHTML = sub(`週${currentFilter}上午接`, am)
+      + sub(`週${currentFilter}下午接（${cutoff}年級以上固定下午；其他有標註 4:00 的也算下午）`, pm);
+  } else {
+    list.innerHTML = items.map(cardHtml).join('');
+  }
+
+  list.querySelectorAll('[data-toggle]').forEach(btn=>{
+    let pressTimer = null;
+    let longPressed = false;
+
+    const applyStatus = (id, next, btnEl)=>{
+      attendance[id] = next;
+      btnEl.className = 'status-btn ' + next;
+      btnEl.textContent = STATUS_LABEL[next];
+      renderSummary();
+      saveAttendance(currentDate); // saves in the background
+    };
+
+    btn.addEventListener('pointerdown', ()=>{
+      longPressed = false;
+      pressTimer = setTimeout(()=>{
+        longPressed = true;
+        const id = btn.dataset.toggle;
+        const prev = attendance[id] || 'idle';
+        if(prev === 'idle') return;
+        const s = roster.find(x=>x.id===id);
+        applyStatus(id, 'idle', btn);
+        if(navigator.vibrate) navigator.vibrate([10,30,10]);
+        showUndoToast(`${s?s.name:''} 已重設為未點`, '復原', ()=> applyStatus(id, prev, btn));
+      }, 500);
+    });
+    const cancelPress = ()=>{ clearTimeout(pressTimer); };
+    btn.addEventListener('pointerup', cancelPress);
+    btn.addEventListener('pointerleave', cancelPress);
+    btn.addEventListener('pointercancel', cancelPress);
+
+    btn.addEventListener('click', ()=>{
+      if(longPressed){ longPressed = false; return; } // long-press already handled it
+      const id = btn.dataset.toggle;
+      const prev = attendance[id] || 'idle';
+      const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(prev)+1) % STATUS_CYCLE.length];
+      const s = roster.find(x=>x.id===id);
+      applyStatus(id, next, btn);
+      if(navigator.vibrate) navigator.vibrate(8);
+      showUndoToast(`${s?s.name:''} → ${STATUS_LABEL[next]}`, '復原', ()=> applyStatus(id, prev, btn));
+    });
+  });
+  list.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', ()=> openEdit(btn.dataset.edit));
+  });
+}
+
+function openEdit(id){
+  const s = roster.find(x=>x.id===id);
+  if(!s) return;
+  editingId = id;
+  document.getElementById('editName').value = s.name;
+  document.getElementById('editGroup').value = s.group || '';
+  document.getElementById('editDay').value = s.day || '';
+  document.getElementById('editPhone').value = s.phone || '';
+  document.getElementById('editNote').value = s.note || '';
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+async function refreshAll(){
+  await loadAttendance(currentDate);
+  renderFilters();
+  renderList();
+  renderSummary();
+  document.getElementById('dateInput').value = currentDate;
+}
+
+// --- date navigation ---
+document.getElementById('dateInput').addEventListener('change', async (e)=>{
+  currentDate = e.target.value;
+  await refreshAll();
+});
+document.getElementById('prevDay').addEventListener('click', async ()=>{
+  const d = new Date(currentDate); d.setDate(d.getDate()-1);
+  currentDate = d.toISOString().slice(0,10);
+  await refreshAll();
+});
+document.getElementById('nextDay').addEventListener('click', async ()=>{
+  const d = new Date(currentDate); d.setDate(d.getDate()+1);
+  currentDate = d.toISOString().slice(0,10);
+  await refreshAll();
+});
+document.getElementById('todayBtn').addEventListener('click', async ()=>{
+  currentDate = todayStr();
+  await refreshAll();
+});
+document.getElementById('searchInput').addEventListener('input', ()=>{ renderList(); renderSummary(); });
+
+// --- bulk actions (respect the current filter + search) ---
+document.getElementById('btnMarkAllPresent').addEventListener('click', ()=>{
+  const items = getVisibleItems();
+  if(items.length === 0){ showToast('目前沒有符合的學生'); return; }
+  // skip anyone already marked 請假 or 家長接 — bulk "mark present" shouldn't touch those
+  const PROTECTED = ['leave', 'parent'];
+  const toChange = items.filter(s => !PROTECTED.includes(attendance[s.id] || 'idle'));
+  if(toChange.length === 0){ showToast('目前都是請假／家長接中，沒有可標記的學生'); return; }
+  const prevSnapshot = {};
+  toChange.forEach(s=>{ prevSnapshot[s.id] = attendance[s.id] || 'idle'; });
+  toChange.forEach(s=>{ attendance[s.id] = 'present'; });
+  renderList();
+  renderSummary();
+  saveAttendance(currentDate);
+  if(navigator.vibrate) navigator.vibrate(10);
+  const skipped = items.length - toChange.length;
+  const msg = skipped > 0
+    ? `已將 ${toChange.length} 位標記為已到（${skipped} 位請假／家長接未變動）`
+    : `已將 ${toChange.length} 位標記為已到`;
+  showUndoToast(msg, '復原', ()=>{
+    toChange.forEach(s=>{ attendance[s.id] = prevSnapshot[s.id]; });
+    renderList(); renderSummary(); saveAttendance(currentDate);
+  });
+});
+
+document.getElementById('btnClearAll').addEventListener('click', ()=>{
+  const items = getVisibleItems();
+  if(items.length === 0){ showToast('目前沒有符合的學生'); return; }
+  const prevSnapshot = {};
+  items.forEach(s=>{ prevSnapshot[s.id] = attendance[s.id] || 'idle'; });
+  items.forEach(s=>{ delete attendance[s.id]; });
+  renderList();
+  renderSummary();
+  saveAttendance(currentDate);
+  if(navigator.vibrate) navigator.vibrate(10);
+  showUndoToast(`已清空 ${items.length} 位的點名狀態`, '復原', ()=>{
+    items.forEach(s=>{ attendance[s.id] = prevSnapshot[s.id]; });
+    renderList(); renderSummary(); saveAttendance(currentDate);
+  });
+});
+
+// --- filter mode toggle (年級 / 接送日) ---
+document.getElementById('modeGroup').addEventListener('click', ()=>{
+  currentFilterMode = 'group';
+  currentFilter = 'all';
+  document.getElementById('modeGroup').classList.add('active');
+  document.getElementById('modeDay').classList.remove('active');
+  renderFilters(); renderList(); renderSummary();
+});
+document.getElementById('modeDay').addEventListener('click', ()=>{
+  currentFilterMode = 'day';
+  currentFilter = 'all';
+  document.getElementById('modeDay').classList.add('active');
+  document.getElementById('modeGroup').classList.remove('active');
+  renderFilters(); renderList(); renderSummary();
+});
+
+// --- add sheet ---
+const addOverlay = document.getElementById('addOverlay');
+document.getElementById('btnAdd').addEventListener('click', ()=> addOverlay.classList.add('open'));
+document.getElementById('cancelSingle').addEventListener('click', ()=> addOverlay.classList.remove('open'));
+document.getElementById('cancelBulk').addEventListener('click', ()=> addOverlay.classList.remove('open'));
+addOverlay.addEventListener('click', (e)=>{ if(e.target===addOverlay) addOverlay.classList.remove('open'); });
+
+document.querySelectorAll('#addOverlay .tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#addOverlay .tabs button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tabSingle').style.display = btn.dataset.tab==='single' ? 'block':'none';
+    document.getElementById('tabBulk').style.display = btn.dataset.tab==='bulk' ? 'block':'none';
+  });
+});
+
+document.getElementById('saveSingle').addEventListener('click', async ()=>{
+  const name = document.getElementById('inName').value.trim();
+  if(!name){ showToast('請輸入姓名'); return; }
+  roster.push({id:uid(), name, group:document.getElementById('inGroup').value.trim(), day:document.getElementById('inDay').value.trim(), phone:document.getElementById('inPhone').value.trim(), note:document.getElementById('inNote').value.trim()});
+  await saveRoster();
+  document.getElementById('inName').value='';
+  document.getElementById('inGroup').value='';
+  document.getElementById('inDay').value='';
+  document.getElementById('inPhone').value='';
+  document.getElementById('inNote').value='';
+  addOverlay.classList.remove('open');
+  renderFilters(); renderList(); renderSummary();
+  showToast('已新增');
+});
+
+document.getElementById('saveBulk').addEventListener('click', async ()=>{
+  const text = document.getElementById('bulkText').value;
+  const lines = text.split('\n').map(l=>l.trim()).filter(Boolean);
+  let count = 0;
+  lines.forEach(line=>{
+    const parts = line.split(/[,，\t]/).map(p=>p.trim());
+    const name = parts[0];
+    if(!name) return;
+    roster.push({id:uid(), name, group:parts[1]||'', phone:parts[2]||'', day:parts[3]||'', note:parts[4]||''});
+    count++;
+  });
+  if(count===0){ showToast('沒有可匯入的資料'); return; }
+  await saveRoster();
+  document.getElementById('bulkText').value='';
+  addOverlay.classList.remove('open');
+  renderFilters(); renderList(); renderSummary();
+  showToast(`已匯入 ${count} 位學生`);
+});
+
+// --- edit sheet ---
+const editOverlay = document.getElementById('editOverlay');
+editOverlay.addEventListener('click', (e)=>{ if(e.target===editOverlay) editOverlay.classList.remove('open'); });
+document.getElementById('saveEdit').addEventListener('click', async ()=>{
+  const s = roster.find(x=>x.id===editingId);
+  if(!s) return;
+  s.name = document.getElementById('editName').value.trim() || s.name;
+  s.group = document.getElementById('editGroup').value.trim();
+  s.day = document.getElementById('editDay').value.trim();
+  s.phone = document.getElementById('editPhone').value.trim();
+  s.note = document.getElementById('editNote').value.trim();
+  await saveRoster();
+  editOverlay.classList.remove('open');
+  renderFilters(); renderList(); renderSummary();
+  showToast('已儲存');
+});
+document.getElementById('deleteStudent').addEventListener('click', async ()=>{
+  roster = roster.filter(x=>x.id!==editingId);
+  await saveRoster();
+  editOverlay.classList.remove('open');
+  renderFilters(); renderList(); renderSummary();
+  showToast('已刪除');
+});
+
+// Builds the plain-text report: each name on its own line under a heading,
+// so it reads cleanly when pasted/sent to LINE.
+function formatReportText(dateLabel, byStatus){
+  const section = (label, arr)=>{
+    if(arr.length === 0) return `${label}：無\n`;
+    return `${label}（${arr.length}）：\n` + arr.map(n=>'・'+n).join('\n') + '\n';
+  };
+  let text = `點名紀錄 ${dateLabel}\n\n`;
+  text += section('已到', byStatus.present) + '\n';
+  text += section('請假', byStatus.leave) + '\n';
+  text += section('未到', byStatus.absent) + '\n';
+  text += section('家長接', byStatus.parent) + '\n';
+  if(byStatus.idle.length) text += section('尚未點名', byStatus.idle);
+  return text;
+}
+
+// --- share / copy today's list ---
+document.getElementById('btnShare').addEventListener('click', ()=>{
+  const byStatus = {present:[], leave:[], absent:[], parent:[], idle:[]};
+  roster.forEach(s=>{
+    const st = attendance[s.id] || 'idle';
+    byStatus[st].push(s.name);
+  });
+  const text = formatReportText(currentDate, byStatus);
+
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>showToast('已複製到剪貼簿')).catch(()=>fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+});
+function fallbackCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); showToast('已複製到剪貼簿'); }catch(e){ showToast('複製失敗'); }
+  document.body.removeChild(ta);
+}
+
+document.getElementById('btnGroups').addEventListener('click', ()=>{
+  showToast(`共 ${roster.length} 位學生、${groups().length} 個分類`);
+});
+
+// --- history sheet ---
+const historyOverlay = document.getElementById('historyOverlay');
+historyOverlay.addEventListener('click', (e)=>{ if(e.target===historyOverlay) historyOverlay.classList.remove('open'); });
+document.getElementById('closeHistory').addEventListener('click', ()=> historyOverlay.classList.remove('open'));
+
+let histDate = todayStr();
+
+document.getElementById('btnHistory').addEventListener('click', ()=>{
+  historyOverlay.classList.add('open');
+  histDate = currentDate; // default to whatever day the main screen is on
+  document.getElementById('histDateInput').value = histDate;
+  renderDailyReport();
+});
+
+document.querySelectorAll('#historyTabs [data-htab]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#historyTabs [data-htab]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.htab;
+    document.getElementById('dailyReportView').style.display = tab==='daily' ? 'block' : 'none';
+    document.getElementById('gridView').style.display = tab==='grid' ? 'block' : 'none';
+    if(tab === 'grid') renderGridHistory();
+  });
+});
+
+document.getElementById('histDateInput').addEventListener('change', (e)=>{
+  histDate = e.target.value;
+  renderDailyReport();
+});
+document.getElementById('histPrevDay').addEventListener('click', ()=>{
+  const d = new Date(histDate); d.setDate(d.getDate()-1);
+  histDate = d.toISOString().slice(0,10);
+  document.getElementById('histDateInput').value = histDate;
+  renderDailyReport();
+});
+document.getElementById('histNextDay').addEventListener('click', ()=>{
+  const d = new Date(histDate); d.setDate(d.getDate()+1);
+  histDate = d.toISOString().slice(0,10);
+  document.getElementById('histDateInput').value = histDate;
+  renderDailyReport();
+});
+
+let currentReportText = '';
+
+async function renderDailyReport(){
+  const body = document.getElementById('dailyReportBody');
+  body.innerHTML = '<div class="empty" style="padding:20px 10px;">讀取中…</div>';
+  let rec = {};
+  try{
+    const r = await Store.get(K('att:'+histDate), false);
+    rec = r ? JSON.parse(r.value) : {};
+  }catch(e){ rec = {}; }
+
+  const groupsBy = {present:[], leave:[], absent:[], parent:[], idle:[]};
+  roster.forEach(s=>{
+    const st = rec[s.id] || 'idle';
+    groupsBy[st].push(s.name);
+  });
+
+  const weekday = ['日','一','二','三','四','五','六'][new Date(histDate).getDay()];
+  let html = `<div class="report-head"><div class="rdate">${histDate}（週${weekday}）</div></div>`;
+  html += `<div class="report-summary">
+    <div class="rchip"><b>${roster.length}</b>總人數</div>
+    <div class="rchip" style="color:var(--present)"><b>${groupsBy.present.length}</b>已到</div>
+    <div class="rchip" style="color:var(--leave)"><b>${groupsBy.leave.length}</b>請假</div>
+    <div class="rchip" style="color:var(--absent)"><b>${groupsBy.absent.length}</b>未到</div>
+    <div class="rchip" style="color:var(--parent)"><b>${groupsBy.parent.length}</b>家長接</div>
+  </div>`;
+
+  const section = (label, color, list)=>{
+    return `<div class="report-group">
+      <div class="report-group-title"><span class="dot" style="background:${color}"></span>${label}（${list.length}）</div>
+      <div class="report-names ${list.length?'':'empty-list'}">${list.length ? escapeHtml(list.join('、')) : '無'}</div>
+    </div>`;
+  };
+
+  html += section('已到', 'var(--present)', groupsBy.present);
+  html += section('請假', 'var(--leave)', groupsBy.leave);
+  html += section('未到', 'var(--absent)', groupsBy.absent);
+  html += section('家長接', 'var(--parent)', groupsBy.parent);
+  if(groupsBy.idle.length) html += section('尚未點名', 'var(--ink-soft)', groupsBy.idle);
+
+  body.innerHTML = html;
+
+  // plain-text version for copying / sending to LINE
+  currentReportText = formatReportText(`${histDate}（週${weekday}）`, groupsBy);
+}
+
+document.getElementById('shareLine').addEventListener('click', ()=>{
+  if(!currentReportText){ showToast('報表還沒準備好，稍等一下再試'); return; }
+  const url = 'https://line.me/R/msg/text/?' + encodeURIComponent(currentReportText);
+  window.open(url, '_blank');
+});
+
+async function renderGridHistory(){
+  const body = document.getElementById('historyBody');
+  body.innerHTML = '<div class="empty" style="padding:30px 10px;">讀取中…</div>';
+  try{
+    const listResult = await Store.list(K('att:'), false);
+    const keys = (listResult && listResult.keys) ? listResult.keys : [];
+    const attPrefix = K('att:');
+    const dates = keys.map(k=>k.slice(attPrefix.length)).filter(Boolean).sort();
+    if(dates.length === 0){
+      body.innerHTML = '<div class="empty" style="padding:30px 10px;">還沒有任何點名紀錄</div>';
+      return;
+    }
+    const records = {};
+    for(const d of dates){
+      try{
+        const r = await Store.get(K('att:'+d), false);
+        records[d] = r ? JSON.parse(r.value) : {};
+      }catch(e){ records[d] = {}; }
+    }
+    const MARK = {present:'到', leave:'假', absent:'X', parent:'接'};
+    let html = '<table class="hist-table"><thead><tr><th class="hist-name">姓名</th>';
+    dates.forEach(d=>{ html += `<th>${d.slice(5).replace('-','/')}</th>`; });
+    html += '</tr></thead><tbody>';
+    roster.forEach(s=>{
+      html += `<tr><td class="hist-name">${escapeHtml(s.name)}</td>`;
+      dates.forEach(d=>{
+        const st = records[d][s.id];
+        html += `<td>${st && MARK[st] ? `<span class="hist-mark ${st}">${MARK[st]}</span>` : ''}</td>`;
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    body.innerHTML = html;
+    document.getElementById('historySub').textContent = `共 ${dates.length} 天的紀錄，每天資料都會保留`;
+  }catch(e){
+    body.innerHTML = '<div class="empty" style="padding:30px 10px;">讀取紀錄失敗，請重試</div>';
+  }
+}
+
+// Flush any pending save the instant the page is hidden/closed/backgrounded —
+// covers accidental screen close, app switch, or the phone locking mid-tap.
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden'){
+    saveAttendance(currentDate);
+  }
+});
+window.addEventListener('pagehide', ()=>{
+  saveAttendance(currentDate);
+});
+
+// Register the service worker for offline installability — only works when
+// this page is actually hosted over http/https (e.g. GitHub Pages). Silently
+// does nothing when opened as a local file:// page.
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+  });
+}
+
+// --- init ---
+(async function init(){
+  document.title = CONFIG.appTitle;
+  document.querySelector('header h1').textContent = CONFIG.appTitle;
+  document.getElementById('dateInput').value = currentDate;
+  await loadRoster();
+
+  // apply class-code renames to already-saved students first
+  let renamed = false;
+  roster.forEach(s => {
+    if(RENAME_MAP[s.name]){
+      s.name = RENAME_MAP[s.name];
+      renamed = true;
+    }
+  });
+
+  // add any seed students not yet in the roster (matched by name)
+  const existingNames = new Set(roster.map(s => s.name));
+  const toAdd = SEED_DATA.filter(s => !existingNames.has(s.name));
+  if(toAdd.length > 0){
+    roster = roster.concat(toAdd.map(s => ({id:uid(), ...s})));
+  }
+
+  // re-classify already-imported students by grade (keeps any phone edits you made)
+  const seedByName = {};
+  SEED_DATA.forEach(s => seedByName[s.name] = s);
+  let changed = toAdd.length > 0 || renamed;
+  roster.forEach(s => {
+    const seed = seedByName[s.name];
+    if(seed && (s.group !== seed.group || s.note !== seed.note || s.day !== (seed.day||''))){
+      s.group = seed.group;
+      s.note = seed.note;
+      s.day = seed.day || '';
+      changed = true;
+    }
+  });
+  if(changed) await saveRoster();
+
+  await refreshAll();
+})();
+</script>
+</body>
+</html>
