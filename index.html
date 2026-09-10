@@ -6,11 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="鎮北國小點名系統">
+<meta name="apple-mobile-web-app-title" content="佳音&大樹接送點名系統">
 <meta name="theme-color" content="#F3F6F5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231F6F5C'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'%3E✓%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231F6F5C'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'%3E✓%3C/text%3E%3C/svg%3E">
-<title>鎮北國小點名系統</title>
+<title>佳音&大樹接送點名系統</title>
 <style>
   :root{
     --bg:#F3F6F5;
@@ -143,7 +143,7 @@
 
 <header>
   <div class="title-row">
-    <h1>鎮北國小點名系統</h1>
+    <h1>佳音&大樹接送點名系統</h1>
     <div style="display:flex; gap:8px;">
       <button class="icon-btn" id="btnHistory" type="button">📅</button>
       <button class="icon-btn" id="btnGroups" type="button">☰</button>
@@ -235,7 +235,16 @@
 <!-- Settings / danger zone sheet -->
 <div class="sheet-overlay" id="settingsOverlay">
   <div class="sheet">
-    <h2>名單資訊</h2>
+    <h2>設定</h2>
+
+    <div class="field">
+      <label>學校名稱（顯示在「點名系統」後面）</label>
+      <input type="text" id="schoolNameInput" placeholder="例如：大樹國小">
+    </div>
+    <div class="sheet-actions" style="margin-bottom:16px;">
+      <button class="btn-primary" id="saveSchoolName" type="button">儲存名稱</button>
+    </div>
+
     <div class="sub" id="settingsSub">—</div>
 
     <div class="hint" style="border-color:#F0C9C9; background:#FBEFEF; color:var(--absent); margin-top:16px;">
@@ -297,7 +306,7 @@
 // is generic and shouldn't need editing.
 // ============================================================================
 const CONFIG = {
-  appTitle: '鎮北國小點名系統',   // shown in the header and as the home-screen name
+  appTitle: '佳音&大樹接送點名系統', // shown in the header and as the home-screen name
   schoolId: 'zhenbei-guobei',    // unique per school — keeps each school's saved
                                   // data separate even if opened in the same browser
 };
@@ -561,7 +570,7 @@ function renderSummary(){
     if(SPLIT_DAYS[currentFilter] !== undefined){
       const am = items.filter(s => timeSlotForDay(s, currentFilter) === 'am').length;
       const pm = items.filter(s => timeSlotForDay(s, currentFilter) === 'pm').length;
-      hint.textContent = `週${currentFilter}共 ${items.length} 位（上午 ${am} 位、下午 ${pm} 位），其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
+      hint.textContent = `週${currentFilter}共 ${items.length} 位（中午 ${am} 位、下午 ${pm} 位），其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
     } else {
       hint.textContent = `週${currentFilter}共 ${items.length} 位，其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
     }
@@ -609,14 +618,14 @@ function getVisibleItems(){
 //   週五 (Fri)      — grade 1-4 morning, grade 5+ afternoon
 //   週一 / 週四     — grade 1-2 morning, grade 3+ afternoon
 // A note can always override that default, in either direction — write
-// "上午" or "下午"/"4:00" in the student's note to force that shift
+// "中午" or "下午"/"4:00" in the student's note to force that shift
 // regardless of grade.
 const SPLIT_DAYS = { '五': 5, '一': 3, '四': 3 };
 function timeSlotForDay(s, dayChar){
   const cutoff = SPLIT_DAYS[dayChar];
   if(cutoff === undefined) return 'am'; // this weekday isn't split
   const noteText = (s.note||'') + ' ' + (s.day||'');
-  if(noteText.includes('上午')) return 'am';
+  if(noteText.includes('中午')) return 'am';
   if(noteText.includes('下午') || noteText.includes('4:00')) return 'pm';
   const grade = parseInt(s.group) || 0;
   return grade >= cutoff ? 'pm' : 'am';
@@ -658,8 +667,8 @@ function renderList(){
     const sub = (label, arr)=> arr.length
       ? `<div class="list-subhead">${label}（${arr.length}）</div>${arr.map(cardHtml).join('')}`
       : '';
-    list.innerHTML = sub(`週${currentFilter}上午接`, am)
-      + sub(`週${currentFilter}下午接（${cutoff}年級以上，除非備註寫「上午」）`, pm);
+    list.innerHTML = sub(`週${currentFilter}中午接`, am)
+      + sub(`週${currentFilter}下午接（${cutoff}年級以上，除非備註寫「中午」）`, pm);
   } else {
     list.innerHTML = items.map(cardHtml).join('');
   }
@@ -924,10 +933,34 @@ const settingsOverlay = document.getElementById('settingsOverlay');
 settingsOverlay.addEventListener('click', (e)=>{ if(e.target===settingsOverlay) settingsOverlay.classList.remove('open'); });
 document.getElementById('closeSettings').addEventListener('click', ()=> settingsOverlay.classList.remove('open'));
 
-document.getElementById('btnGroups').addEventListener('click', ()=>{
+// applies the base title ("appTitle") plus the teacher's own school name, if set
+function applyTitle(schoolName){
+  const full = schoolName ? `${CONFIG.appTitle} - ${schoolName}` : CONFIG.appTitle;
+  document.title = full;
+  document.querySelector('header h1').textContent = full;
+}
+
+document.getElementById('btnGroups').addEventListener('click', async ()=>{
   const gradeCount = new Set(roster.map(s=>s.group).filter(Boolean)).size;
   document.getElementById('settingsSub').textContent = `目前共 ${roster.length} 位學生、${gradeCount} 個年級分類`;
+  try{
+    const r = await Store.get(K('schoolName'), false);
+    document.getElementById('schoolNameInput').value = (r && r.value) || '';
+  }catch(e){
+    document.getElementById('schoolNameInput').value = '';
+  }
   settingsOverlay.classList.add('open');
+});
+
+document.getElementById('saveSchoolName').addEventListener('click', async ()=>{
+  const name = document.getElementById('schoolNameInput').value.trim();
+  try{
+    await Store.set(K('schoolName'), name, false);
+    applyTitle(name);
+    showToast(name ? '已儲存學校名稱' : '已清空學校名稱');
+  }catch(e){
+    showToast('儲存失敗，請重試');
+  }
 });
 
 document.getElementById('btnClearRoster').addEventListener('click', ()=>{
@@ -1088,8 +1121,12 @@ window.addEventListener('pagehide', ()=>{
 
 // --- init ---
 (async function init(){
-  document.title = CONFIG.appTitle;
-  document.querySelector('header h1').textContent = CONFIG.appTitle;
+  let savedSchoolName = '';
+  try{
+    const r = await Store.get(K('schoolName'), false);
+    savedSchoolName = (r && r.value) || '';
+  }catch(e){ savedSchoolName = ''; }
+  applyTitle(savedSchoolName);
   document.getElementById('dateInput').value = currentDate;
   await loadRoster();
 
