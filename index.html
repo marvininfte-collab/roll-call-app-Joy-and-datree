@@ -6,14 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="點名系統">
+<meta name="apple-mobile-web-app-title" content="鎮北國小點名系統">
 <meta name="theme-color" content="#F3F6F5">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231F6F5C'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'%3E✓%3C/text%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231F6F5C'/%3E%3Ctext x='50' y='64' font-size='52' text-anchor='middle' fill='white' font-family='sans-serif'%3E✓%3C/text%3E%3C/svg%3E">
-<!-- Only takes effect once this file is hosted over https (e.g. GitHub Pages) —
-     harmless no-op when opened as a local file. -->
-<link rel="manifest" href="manifest.json">
-<title>點名系統</title>
+<title>鎮北國小點名系統</title>
 <style>
   :root{
     --bg:#F3F6F5;
@@ -146,7 +143,7 @@
 
 <header>
   <div class="title-row">
-    <h1>點名系統</h1>
+    <h1>鎮北國小點名系統</h1>
     <div style="display:flex; gap:8px;">
       <button class="icon-btn" id="btnHistory" type="button">📅</button>
       <button class="icon-btn" id="btnGroups" type="button">☰</button>
@@ -235,6 +232,26 @@
   </div>
 </div>
 
+<!-- Settings / danger zone sheet -->
+<div class="sheet-overlay" id="settingsOverlay">
+  <div class="sheet">
+    <h2>名單資訊</h2>
+    <div class="sub" id="settingsSub">—</div>
+
+    <div class="hint" style="border-color:#F0C9C9; background:#FBEFEF; color:var(--absent); margin-top:16px;">
+      <b>危險區域</b><br>
+      清除後，所有學生資料會整個刪掉，且無法復原。點名紀錄（歷史紀錄）不會被清除，仍會留著，但因為找不到對應的學生，之後在「歷史紀錄」裡可能不會正常顯示姓名。
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-secondary danger" id="btnClearRoster" type="button">清除所有學生資料</button>
+    </div>
+
+    <div class="sheet-actions">
+      <button class="btn-secondary" id="closeSettings" type="button">關閉</button>
+    </div>
+  </div>
+</div>
+
 <!-- History sheet -->
 <div class="sheet-overlay" id="historyOverlay">
   <div class="sheet" style="max-height:92vh;">
@@ -280,8 +297,8 @@
 // is generic and shouldn't need editing.
 // ============================================================================
 const CONFIG = {
-  appTitle: '點名系統',           // shown in the header and as the home-screen name
-  schoolId: 'template',  // change this per school/teacher deployment    // unique per school — keeps each school's saved
+  appTitle: '鎮北國小點名系統',   // shown in the header and as the home-screen name
+  schoolId: 'zhenbei-guobei',    // unique per school — keeps each school's saved
                                   // data separate even if opened in the same browser
 };
 // Remember to also update <title> and the apple-mobile-web-app-title <meta> tag
@@ -362,14 +379,57 @@ let editingId = null;
 // Class-code corrections (old name -> new name) so already-saved students
 // get renamed in place instead of duplicated when SEED_DATA is updated.
 const RENAME_MAP = {
-  // e.g. '舊名字（舊班別）': '新名字（新班別）',
+  '吳柏叡（3班）': '吳柏叡（3-2班）',
+  '陳妡茹（3班）': '陳妡茹（3-4班）',
+  '李語棠（3班）': '李語棠（3-1班）',
+  '楊黃任霆（3班）': '楊黃任霆（3-4班）',
+  '趙翌程（3班）': '趙翌程（3-4班）',
+  '黃竑儒（3班）': '黃竑儒（3-1班）',
+  '吳羽軒（3班）': '吳羽軒（3-2班）',
+  '孫昱璇（5班）': '孫昱璇（5-4班）',
+  '謝喬伊（5班）': '謝喬伊（5-5班）',
+  '石鉉安（5班）': '石鉉安（5-5班）',
+  '曾馨蒂（5班）': '曾馨蒂（5-2班）',
 };
 
 const SEED_DATA = [
-  // 新學校/新老師版本：從空白開始，用「新增學生」或「整批匯入」建立名單即可。
-  // 也可以先貼上完整名單當作範例：
-  // {name:'王小明（1-1班）', group:'1年級', phone:'0912-345678', day:'每天', note:''},
+  // -- 深色（老師親自接送）--
+  {name:'吳柏叡（3-2班）', group:'3年級', phone:'0938-177113', note:'親自接送・二五', day:'二五'},
+  {name:'陳妡茹（3-4班）', group:'3年級', phone:'0925-515365', note:'親自接送・三五', day:'三五'},
+  {name:'李語棠（3-1班）', group:'3年級', phone:'0910-560446', note:'親自接送・三五', day:'三五'},
+  {name:'陳柏彥（4-班）', group:'4年級', phone:'0925-515365', note:'親自接送・五', day:'五'},
+  {name:'簡梓秦（6班）', group:'6年級', phone:'0910-778169', note:'親自接送・五', day:'五'},
+  {name:'林永宸（5-1班）', group:'5年級', phone:'0929-642306', note:'親自接送・一四', day:'一四'},
+  {name:'吳杞祺（2-2班）', group:'2年級', phone:'0919-897930', note:'親自接送・二五', day:'二五'},
+  {name:'林沐橙（2-3班）', group:'2年級', phone:'0963-098851', note:'親自接送・二五 4:00', day:'二五'},
+  {name:'陳柏宇（2-5班）', group:'2年級', phone:'0925-515365', note:'親自接送・二五', day:'二五'},
+  {name:'谷明臻（2-班）', group:'2年級', phone:'0968-774363', note:'親自接送・二五', day:'二五'},
+  // -- 白色（佳音接駁）--
+  {name:'孫昱璇（5-4班）', group:'5年級', phone:'0963-120072', day:'每天', note:'佳音・文中'},
+  {name:'謝喬伊（5-5班）', group:'5年級', phone:'0986-890861', day:'每天', note:'佳音・文中'},
+  {name:'石鉉安（5-5班）', group:'5年級', phone:'0919-789722', day:'每天', note:'佳音・美小'},
+  {name:'曾馨蒂（5-2班）', group:'5年級', phone:'0932-866280', day:'每天', note:'佳音・文中'},
+  {name:'吳苡瑄（6-5班）', group:'6年級', phone:'0928-430670', day:'每天', note:'佳音・文中'},
+  {name:'馮翊程（1-1班）', group:'1年級', phone:'0976-340271', day:'每天', note:'佳音・美小'},
+  {name:'陳琮恩（1-2班）', group:'1年級', phone:'0912-168232', day:'每天', note:'佳音・文中'},
+  {name:'吳羽洸（1-2班）', group:'1年級', phone:'0965-820996', day:'每天', note:'佳音・文中'},
+  {name:'郭侑甯（1-2班）', group:'1年級', phone:'0912-983375', day:'每天', note:'佳音・美小'},
+  {name:'李晟瑞（1-3班）', group:'1年級', phone:'0910-560446', day:'每天', note:'佳音・美小'},
+  {name:'黃鈞浩（1-3班）', group:'1年級', phone:'0989-577859', day:'每天', note:'佳音・文中'},
+  {name:'張瑀恬（2-1班）', group:'2年級', phone:'0956-550641', day:'每天', note:'佳音・文中'},
+  {name:'石竣鎧（2-2班）', group:'2年級', phone:'0919-789722', day:'每天', note:'佳音・美小'},
+  {name:'趙宥寧（2-2班）', group:'2年級', phone:'0930-625392', day:'每天', note:'佳音・美小'},
+  {name:'魏柏昀（2-2班）', group:'2年級', phone:'0952-680888', day:'每天', note:'佳音・二X'},
+  {name:'楊黃任霆（3-4班）', group:'3年級', phone:'0962-072272', day:'每天', note:'佳音・文中'},
+  {name:'趙翌程（3-4班）', group:'3年級', phone:'0930-625392', day:'每天', note:'佳音・美小'},
+  {name:'黃竑儒（3-1班）', group:'3年級', phone:'0929-730603', day:'每天', note:'佳音・文中'},
+  {name:'楊博宇（3-1班）', group:'3年級', phone:'0989-291351', day:'每天', note:'佳音・克拉克'},
+  {name:'吳羽軒（3-2班）', group:'3年級', phone:'0965-820996', day:'每天', note:'佳音・文中'},
+  {name:'高翊凱（4-1班）', group:'4年級', phone:'0985-362910', day:'每天', note:'佳音・文中'},
+  {name:'郭睿恩（4-1班）', group:'4年級', phone:'0918-229715', day:'每天', note:'佳音・文中'},
+  {name:'吳羽霆（4-3班）', group:'4年級', phone:'0928-430670', day:'每天', note:'佳音・文中'},
 ];
+// ============================================================================
 // END SCHOOL-SPECIFIC DATA — everything below this line is generic app logic.
 // ============================================================================
 
@@ -858,8 +918,26 @@ function fallbackCopy(text){
   document.body.removeChild(ta);
 }
 
+const settingsOverlay = document.getElementById('settingsOverlay');
+settingsOverlay.addEventListener('click', (e)=>{ if(e.target===settingsOverlay) settingsOverlay.classList.remove('open'); });
+document.getElementById('closeSettings').addEventListener('click', ()=> settingsOverlay.classList.remove('open'));
+
 document.getElementById('btnGroups').addEventListener('click', ()=>{
-  showToast(`共 ${roster.length} 位學生、${groups().length} 個分類`);
+  const gradeCount = new Set(roster.map(s=>s.group).filter(Boolean)).size;
+  document.getElementById('settingsSub').textContent = `目前共 ${roster.length} 位學生、${gradeCount} 個年級分類`;
+  settingsOverlay.classList.add('open');
+});
+
+document.getElementById('btnClearRoster').addEventListener('click', ()=>{
+  if(roster.length === 0){ showToast('目前沒有學生資料'); return; }
+  const ok = confirm(`確定要清除全部 ${roster.length} 位學生資料嗎？此動作無法復原。`);
+  if(!ok) return;
+  roster = [];
+  saveRoster();
+  Store.set(K('roster_cleared'), 'true', false).catch(()=>{});
+  settingsOverlay.classList.remove('open');
+  renderFilters(); renderList(); renderSummary();
+  showToast('已清除所有學生資料');
 });
 
 // --- history sheet ---
@@ -1006,21 +1084,20 @@ window.addEventListener('pagehide', ()=>{
   saveAttendance(currentDate);
 });
 
-// Register the service worker for offline installability — only works when
-// this page is actually hosted over http/https (e.g. GitHub Pages). Silently
-// does nothing when opened as a local file:// page.
-if('serviceWorker' in navigator && location.protocol.startsWith('http')){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
-  });
-}
-
 // --- init ---
 (async function init(){
   document.title = CONFIG.appTitle;
   document.querySelector('header h1').textContent = CONFIG.appTitle;
   document.getElementById('dateInput').value = currentDate;
   await loadRoster();
+
+  // If the user has deliberately cleared the roster (via 清除所有學生資料),
+  // respect that — don't let SEED_DATA silently repopulate it on next load.
+  let clearedFlag = false;
+  try{
+    const r = await Store.get(K('roster_cleared'), false);
+    clearedFlag = !!(r && r.value === 'true');
+  }catch(e){ clearedFlag = false; }
 
   // apply class-code renames to already-saved students first
   let renamed = false;
@@ -1031,9 +1108,10 @@ if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     }
   });
 
-  // add any seed students not yet in the roster (matched by name)
+  // add any seed students not yet in the roster (matched by name) — skipped
+  // once the roster has been explicitly cleared
   const existingNames = new Set(roster.map(s => s.name));
-  const toAdd = SEED_DATA.filter(s => !existingNames.has(s.name));
+  const toAdd = clearedFlag ? [] : SEED_DATA.filter(s => !existingNames.has(s.name));
   if(toAdd.length > 0){
     roster = roster.concat(toAdd.map(s => ({id:uid(), ...s})));
   }
