@@ -605,19 +605,21 @@ function getVisibleItems(){
 }
 
 // Some weekdays are split into a morning and an afternoon pickup shift,
-// with the cutoff grade depending on the day:
-//   週五 (Fri) — grade 5+ is afternoon
-//   週一 / 週四 (Mon/Thu) — grade 3+ is afternoon
-// A note/day explicitly containing "4:00" always forces afternoon, on any
-// split day, regardless of grade.
+// with the default cutoff grade depending on the day:
+//   週五 (Fri)      — grade 1-4 morning, grade 5+ afternoon
+//   週一 / 週四     — grade 1-2 morning, grade 3+ afternoon
+// A note can always override that default, in either direction — write
+// "上午" or "下午"/"4:00" in the student's note to force that shift
+// regardless of grade.
 const SPLIT_DAYS = { '五': 5, '一': 3, '四': 3 };
 function timeSlotForDay(s, dayChar){
   const cutoff = SPLIT_DAYS[dayChar];
   if(cutoff === undefined) return 'am'; // this weekday isn't split
+  const noteText = (s.note||'') + ' ' + (s.day||'');
+  if(noteText.includes('上午')) return 'am';
+  if(noteText.includes('下午') || noteText.includes('4:00')) return 'pm';
   const grade = parseInt(s.group) || 0;
-  if(grade >= cutoff) return 'pm';
-  if((s.note||'').includes('4:00') || (s.day||'').includes('4:00')) return 'pm';
-  return 'am';
+  return grade >= cutoff ? 'pm' : 'am';
 }
 
 function cardHtml(s){
@@ -657,7 +659,7 @@ function renderList(){
       ? `<div class="list-subhead">${label}（${arr.length}）</div>${arr.map(cardHtml).join('')}`
       : '';
     list.innerHTML = sub(`週${currentFilter}上午接`, am)
-      + sub(`週${currentFilter}下午接（${cutoff}年級以上固定下午；其他有標註 4:00 的也算下午）`, pm);
+      + sub(`週${currentFilter}下午接（${cutoff}年級以上，除非備註寫「上午」）`, pm);
   } else {
     list.innerHTML = items.map(cardHtml).join('');
   }
