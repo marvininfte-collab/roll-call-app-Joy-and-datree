@@ -167,11 +167,10 @@
   <div class="sub" id="summaryHint" style="display:none; text-align:center; margin-top:4px;"></div>
 </header>
 
-<div class="filters" id="modeRow" style="padding:10px 16px 0;">
-  <div class="filter-chip active" data-mode="group" id="modeGroup" style="border-radius:8px;">依年級</div>
-  <div class="filter-chip" data-mode="day" id="modeDay" style="border-radius:8px;">依接送日</div>
-</div>
-<div class="filters" id="filterRow"></div>
+<div class="sub" style="margin:0 16px 4px;">年級</div>
+<div class="filters" id="gradeFilterRow"></div>
+<div class="sub" style="margin:8px 16px 4px;">接送日</div>
+<div class="filters" id="dayFilterRow"></div>
 <div class="search"><input type="text" id="searchInput" placeholder="搜尋姓名"></div>
 <div class="bulk-row" id="bulkRow">
   <button id="btnMarkAllPresent" type="button">✓ 全部標記已到</button>
@@ -374,8 +373,8 @@ function parseDays(dayStr){
 let roster = [];
 let attendance = {};
 let currentDate = todayStr();
-let currentFilter = 'all';
-let currentFilterMode = 'group'; // 'group' (年級) or 'day' (接送日)
+let selectedGrade = 'all';
+let selectedDay = 'all';
 let editingId = null;
 
 // ============================================================================
@@ -518,11 +517,7 @@ async function saveAttendance(date){
   attSaveInFlight = false;
 }
 
-function groups(){
-  if(currentFilterMode === 'day'){
-    // fixed set: 週一..週五 — always shown, regardless of who's in the roster
-    return WEEKDAYS.slice();
-  }
+function gradeGroups(){
   const set = new Set(roster.map(s=>s.group).filter(Boolean));
   const arr = Array.from(set);
   // sort grade-like labels (1年級..6年級) numerically; anything else falls to the end
@@ -537,16 +532,24 @@ function groups(){
 }
 
 function renderFilters(){
-  const row = document.getElementById('filterRow');
-  const gs = groups();
-  let html = `<div class="filter-chip ${currentFilter==='all'?'active':''}" data-g="all">全部</div>`;
-  gs.forEach(g=>{
-    const label = currentFilterMode === 'day' ? ('週'+g) : g;
-    html += `<div class="filter-chip ${currentFilter===g?'active':''}" data-g="${escapeHtml(g)}">${escapeHtml(label)}</div>`;
+  const gradeRow = document.getElementById('gradeFilterRow');
+  let gHtml = `<div class="filter-chip ${selectedGrade==='all'?'active':''}" data-g="all">全部</div>`;
+  gradeGroups().forEach(g=>{
+    gHtml += `<div class="filter-chip ${selectedGrade===g?'active':''}" data-g="${escapeHtml(g)}">${escapeHtml(g)}</div>`;
   });
-  row.innerHTML = html;
-  row.querySelectorAll('.filter-chip').forEach(el=>{
-    el.addEventListener('click', ()=>{ currentFilter = el.dataset.g; renderFilters(); renderList(); renderSummary(); });
+  gradeRow.innerHTML = gHtml;
+  gradeRow.querySelectorAll('.filter-chip').forEach(el=>{
+    el.addEventListener('click', ()=>{ selectedGrade = el.dataset.g; renderFilters(); renderList(); renderSummary(); });
+  });
+
+  const dayRow = document.getElementById('dayFilterRow');
+  let dHtml = `<div class="filter-chip ${selectedDay==='all'?'active':''}" data-d="all">全部</div>`;
+  WEEKDAYS.forEach(w=>{
+    dHtml += `<div class="filter-chip ${selectedDay===w?'active':''}" data-d="${escapeHtml(w)}">週${escapeHtml(w)}</div>`;
+  });
+  dayRow.innerHTML = dHtml;
+  dayRow.querySelectorAll('.filter-chip').forEach(el=>{
+    el.addEventListener('click', ()=>{ selectedDay = el.dataset.d; renderFilters(); renderList(); renderSummary(); });
   });
 }
 
@@ -571,14 +574,15 @@ function renderSummary(){
   document.getElementById('cntParent').textContent = parent;
 
   const hint = document.getElementById('summaryHint');
-  if(currentFilterMode === 'day' && currentFilter !== 'all'){
+  if(selectedDay !== 'all'){
     hint.style.display = 'block';
-    if(SPLIT_DAYS[currentFilter] !== undefined){
-      const am = items.filter(s => timeSlotForDay(s, currentFilter) === 'am').length;
-      const pm = items.filter(s => timeSlotForDay(s, currentFilter) === 'pm').length;
-      hint.textContent = `週${currentFilter}共 ${items.length} 位（中午 ${am} 位、下午 ${pm} 位），其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
+    const gradePrefix = selectedGrade !== 'all' ? `${selectedGrade}・` : '';
+    if(SPLIT_DAYS[selectedDay] !== undefined){
+      const am = items.filter(s => timeSlotForDay(s, selectedDay) === 'am').length;
+      const pm = items.filter(s => timeSlotForDay(s, selectedDay) === 'pm').length;
+      hint.textContent = `${gradePrefix}週${selectedDay}共 ${items.length} 位（中午 ${am} 位、下午 ${pm} 位），其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
     } else {
-      hint.textContent = `週${currentFilter}共 ${items.length} 位，其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
+      hint.textContent = `${gradePrefix}週${selectedDay}共 ${items.length} 位，其中 ${parent} 位家長接送 — 以上數字僅計入目前篩選範圍`;
     }
   } else {
     hint.style.display = 'none';
@@ -611,13 +615,8 @@ function sortByGradeClass(list){
 function getVisibleItems(){
   const q = document.getElementById('searchInput').value.trim();
   let items = roster.slice();
-  if(currentFilter !== 'all'){
-    if(currentFilterMode === 'day'){
-      items = items.filter(s => parseDays(s.day).includes(currentFilter));
-    } else {
-      items = items.filter(s => s.group === currentFilter);
-    }
-  }
+  if(selectedGrade !== 'all') items = items.filter(s => s.group === selectedGrade);
+  if(selectedDay !== 'all') items = items.filter(s => parseDays(s.day).includes(selectedDay));
   if(q) items = items.filter(s=>s.name.includes(q));
 
   // sort by grade, then class, then name — so the list always reads top to
@@ -671,16 +670,16 @@ function renderList(){
     return;
   }
 
-  const isSplitDay = currentFilterMode === 'day' && SPLIT_DAYS[currentFilter] !== undefined;
+  const isSplitDay = SPLIT_DAYS[selectedDay] !== undefined;
   if(isSplitDay){
-    const cutoff = SPLIT_DAYS[currentFilter];
-    const am = items.filter(s => timeSlotForDay(s, currentFilter) === 'am');
-    const pm = items.filter(s => timeSlotForDay(s, currentFilter) === 'pm');
+    const cutoff = SPLIT_DAYS[selectedDay];
+    const am = items.filter(s => timeSlotForDay(s, selectedDay) === 'am');
+    const pm = items.filter(s => timeSlotForDay(s, selectedDay) === 'pm');
     const sub = (label, arr)=> arr.length
       ? `<div class="list-subhead">${label}（${arr.length}）</div>${arr.map(cardHtml).join('')}`
       : '';
-    list.innerHTML = sub(`週${currentFilter}中午接`, am)
-      + sub(`週${currentFilter}下午接（${cutoff}年級以上，除非備註寫「中午」）`, pm);
+    list.innerHTML = sub(`週${selectedDay}中午接`, am)
+      + sub(`週${selectedDay}下午接（${cutoff}年級以上，除非備註寫「中午」）`, pm);
   } else {
     list.innerHTML = items.map(cardHtml).join('');
   }
@@ -811,22 +810,6 @@ document.getElementById('btnClearAll').addEventListener('click', ()=>{
     items.forEach(s=>{ attendance[s.id] = prevSnapshot[s.id]; });
     renderList(); renderSummary(); saveAttendance(currentDate);
   });
-});
-
-// --- filter mode toggle (年級 / 接送日) ---
-document.getElementById('modeGroup').addEventListener('click', ()=>{
-  currentFilterMode = 'group';
-  currentFilter = 'all';
-  document.getElementById('modeGroup').classList.add('active');
-  document.getElementById('modeDay').classList.remove('active');
-  renderFilters(); renderList(); renderSummary();
-});
-document.getElementById('modeDay').addEventListener('click', ()=>{
-  currentFilterMode = 'day';
-  currentFilter = 'all';
-  document.getElementById('modeDay').classList.add('active');
-  document.getElementById('modeGroup').classList.remove('active');
-  renderFilters(); renderList(); renderSummary();
 });
 
 // --- add sheet ---
@@ -1224,19 +1207,11 @@ window.addEventListener('pagehide', ()=>{
     roster = roster.concat(toAdd.map(s => ({id:uid(), ...s})));
   }
 
-  // re-classify already-imported students by grade (keeps any phone edits you made)
-  const seedByName = {};
-  SEED_DATA.forEach(s => seedByName[s.name] = s);
-  let changed = toAdd.length > 0 || renamed;
-  roster.forEach(s => {
-    const seed = seedByName[s.name];
-    if(seed && (s.group !== seed.group || s.note !== seed.note || s.day !== (seed.day||''))){
-      s.group = seed.group;
-      s.note = seed.note;
-      s.day = seed.day || '';
-      changed = true;
-    }
-  });
+  // NOTE: earlier versions also re-synced group/note/day from SEED_DATA on
+  // every load, which silently overwrote any edits made in the app (e.g.
+  // changing a student's grade). Removed — once a student is in the roster,
+  // only your own edits (via ✎) or explicit re-import change their data.
+  const changed = toAdd.length > 0 || renamed;
   if(changed) await saveRoster();
 
   await refreshAll();
