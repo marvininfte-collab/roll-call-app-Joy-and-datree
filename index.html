@@ -373,7 +373,7 @@ function parseDays(dayStr){
 let roster = [];
 let attendance = {};
 let currentDate = todayStr();
-let selectedGrade = 'all';
+let selectedGrades = new Set(); // empty = all grades
 let selectedDay = 'all';
 let editingId = null;
 
@@ -533,13 +533,23 @@ function gradeGroups(){
 
 function renderFilters(){
   const gradeRow = document.getElementById('gradeFilterRow');
-  let gHtml = `<div class="filter-chip ${selectedGrade==='all'?'active':''}" data-g="all">全部</div>`;
+  let gHtml = `<div class="filter-chip ${selectedGrades.size===0?'active':''}" data-g="all">全部</div>`;
   gradeGroups().forEach(g=>{
-    gHtml += `<div class="filter-chip ${selectedGrade===g?'active':''}" data-g="${escapeHtml(g)}">${escapeHtml(g)}</div>`;
+    gHtml += `<div class="filter-chip ${selectedGrades.has(g)?'active':''}" data-g="${escapeHtml(g)}">${escapeHtml(g)}</div>`;
   });
   gradeRow.innerHTML = gHtml;
   gradeRow.querySelectorAll('.filter-chip').forEach(el=>{
-    el.addEventListener('click', ()=>{ selectedGrade = el.dataset.g; renderFilters(); renderList(); renderSummary(); });
+    el.addEventListener('click', ()=>{
+      const g = el.dataset.g;
+      if(g === 'all'){
+        selectedGrades.clear();
+      } else if(selectedGrades.has(g)){
+        selectedGrades.delete(g);
+      } else {
+        selectedGrades.add(g);
+      }
+      renderFilters(); renderList(); renderSummary();
+    });
   });
 
   const dayRow = document.getElementById('dayFilterRow');
@@ -576,7 +586,7 @@ function renderSummary(){
   const hint = document.getElementById('summaryHint');
   if(selectedDay !== 'all'){
     hint.style.display = 'block';
-    const gradePrefix = selectedGrade !== 'all' ? `${selectedGrade}・` : '';
+    const gradePrefix = selectedGrades.size > 0 ? `${gradeGroups().filter(g=>selectedGrades.has(g)).join('、')}・` : '';
     if(SPLIT_DAYS[selectedDay] !== undefined){
       const am = items.filter(s => timeSlotForDay(s, selectedDay) === 'am').length;
       const pm = items.filter(s => timeSlotForDay(s, selectedDay) === 'pm').length;
@@ -615,7 +625,7 @@ function sortByGradeClass(list){
 function getVisibleItems(){
   const q = document.getElementById('searchInput').value.trim();
   let items = roster.slice();
-  if(selectedGrade !== 'all') items = items.filter(s => s.group === selectedGrade);
+  if(selectedGrades.size > 0) items = items.filter(s => selectedGrades.has(s.group));
   if(selectedDay !== 'all') items = items.filter(s => parseDays(s.day).includes(selectedDay));
   if(q) items = items.filter(s=>s.name.includes(q));
 
