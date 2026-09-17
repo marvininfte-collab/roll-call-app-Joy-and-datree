@@ -143,6 +143,7 @@
 </head>
 <body>
 
+<div id="themeStrip" style="height:8px; background:var(--accent);"></div>
 <header>
   <div class="title-row">
     <h1>佳音&大樹接送點名系統</h1>
@@ -246,6 +247,25 @@
       <button class="btn-primary" id="saveSchoolName" type="button">儲存名稱</button>
     </div>
 
+    <div class="field">
+      <label>主畫面圖示下方的名字（跟上面標題分開，建議短一點，手機才顯示得完整）</label>
+      <input type="text" id="homeNameInput" maxlength="12" placeholder="例如：大樹接送">
+    </div>
+    <div class="sheet-actions" style="margin-bottom:16px;">
+      <button class="btn-primary" id="saveHomeName" type="button">儲存主畫面名稱</button>
+    </div>
+
+    <div class="field">
+      <label>畫面主色（開啟就立刻看得到，方便跟另一份名單一眼分辨——不用等手機圖示更新）</label>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <input type="color" id="themeColorInput" style="width:48px; height:40px; padding:2px; border:1px solid var(--line); border-radius:8px;">
+        <div id="themeColorPreviewLabel" style="font-size:13px; color:var(--ink-soft);">頂端色條、按鈕、標籤都會用這個顏色</div>
+      </div>
+    </div>
+    <div class="sheet-actions" style="margin-bottom:16px;">
+      <button class="btn-primary" id="saveThemeColor" type="button">儲存畫面顏色</button>
+    </div>
+
     <div class="sub" id="settingsSub">—</div>
 
     <div class="hint" style="border-color:#F0C9C9; background:#FBEFEF; color:var(--absent); margin-top:16px;">
@@ -313,6 +333,8 @@ const CONFIG = {
   schoolId: 'zhenbei-guobei',    // unique per school — keeps each school's saved
                                   // data separate even if opened in the same browser
 };
+// To change the home-screen icon graphic itself, edit the <link rel="icon">
+// and <link rel="apple-touch-icon"> data-URIs near the top of the HTML.
 // Remember to also update <title> and the apple-mobile-web-app-title <meta> tag
 // near the top of the HTML — those two are static and can't be set from here.
 // ============================================================================
@@ -391,57 +413,11 @@ let editingId = null;
 // Class-code corrections (old name -> new name) so already-saved students
 // get renamed in place instead of duplicated when SEED_DATA is updated.
 const RENAME_MAP = {
-  '吳柏叡（3班）': '吳柏叡（3-2班）',
-  '陳妡茹（3班）': '陳妡茹（3-4班）',
-  '李語棠（3班）': '李語棠（3-1班）',
-  '楊黃任霆（3班）': '楊黃任霆（3-4班）',
-  '趙翌程（3班）': '趙翌程（3-4班）',
-  '黃竑儒（3班）': '黃竑儒（3-1班）',
-  '吳羽軒（3班）': '吳羽軒（3-2班）',
-  '孫昱璇（5班）': '孫昱璇（5-4班）',
-  '謝喬伊（5班）': '謝喬伊（5-5班）',
-  '石鉉安（5班）': '石鉉安（5-5班）',
-  '曾馨蒂（5班）': '曾馨蒂（5-2班）',
-  '郭侑甯（1-2班）': '郭侑甯（2-2班）',
-  '吳羽霆（4-3班）': '吳羿霆（4-3班）',
+  // e.g. '舊名字（舊班別）': '新名字（新班別）',
 };
 
 const SEED_DATA = [
-  // -- 深色（老師親自接送）--
-  {name:'吳柏叡（3-2班）', group:'3年級', phone:'0938-177113', note:'親自接送・二五(下午)', day:'二五'},
-  {name:'陳妡茹（3-4班）', group:'3年級', phone:'0925-515365', note:'親自接送・三五(下午)', day:'三五'},
-  {name:'李語棠（3-1班）', group:'3年級', phone:'0910-560446', note:'親自接送・三五', day:'三五'},
-  {name:'陳柏彥（4-班）', group:'4年級', phone:'0925-515365', note:'親自接送・五(下午)', day:'五'},
-  {name:'簡梓秦（6班）', group:'6年級', phone:'0910-778169', note:'親自接送・五(下午)', day:'五'},
-  {name:'林永宸（5-1班）', group:'5年級', phone:'0929-642306', note:'親自接送・一四', day:'一四'},
-  {name:'吳杞祺（2-2班）', group:'2年級', phone:'0919-897930', note:'親自接送・二五(下午)', day:'二五'},
-  {name:'林沐橙（2-3班）', group:'2年級', phone:'0963-098851', note:'親自接送・二五(下午)', day:'二五'},
-  {name:'陳柏宇（2-5班）', group:'2年級', phone:'0925-515365', note:'親自接送・二五(下午)', day:'二五'},
-  {name:'谷明臻（2-班）', group:'2年級', phone:'0968-774363', note:'親自接送・二五(下午)', day:'二五'},
-  // -- 白色（佳音接駁）--
-  {name:'孫昱璇（5-4班）', group:'5年級', phone:'0963-120072', day:'每天', note:'佳音・文中'},
-  {name:'謝喬伊（5-5班）', group:'5年級', phone:'0986-890861', day:'每天', note:'佳音・文中'},
-  {name:'石鉉安（5-5班）', group:'5年級', phone:'0919-789722', day:'每天', note:'佳音・美小'},
-  {name:'曾馨蒂（5-2班）', group:'5年級', phone:'0932-866280', day:'每天', note:'佳音・文中'},
-  {name:'吳苡瑄（6-5班）', group:'6年級', phone:'0928-430670', day:'每天', note:'佳音・文中'},
-  {name:'馮翊程（1-1班）', group:'1年級', phone:'0976-340271', day:'每天', note:'佳音・美小'},
-  {name:'陳琮恩（1-2班）', group:'1年級', phone:'0912-168232', day:'每天', note:'佳音・文中'},
-  {name:'吳羽洸（1-2班）', group:'1年級', phone:'0965-820996', day:'每天', note:'佳音・文中'},
-  {name:'郭侑甯（2-2班）', group:'1年級', phone:'0912-983375', day:'每天', note:'佳音・美小'},
-  {name:'李晟瑞（1-3班）', group:'1年級', phone:'0910-560446', day:'每天', note:'佳音・美小'},
-  {name:'黃鈞浩（1-3班）', group:'1年級', phone:'0989-577859', day:'每天', note:'佳音・文中'},
-  {name:'張瑀恬（2-1班）', group:'2年級', phone:'0956-550641', day:'每天', note:'佳音・文中'},
-  {name:'石竣鎧（2-2班）', group:'2年級', phone:'0919-789722', day:'每天', note:'佳音・美小'},
-  {name:'趙宥寧（2-2班）', group:'2年級', phone:'0930-625392', day:'每天', note:'佳音・美小'},
-  {name:'魏柏昀（2-2班）', group:'2年級', phone:'0952-680888', day:'每天', note:'佳音・二X'},
-  {name:'楊黃任霆（3-4班）', group:'3年級', phone:'0962-072272', day:'每天', note:'佳音・文中'},
-  {name:'趙翌程（3-4班）', group:'3年級', phone:'0930-625392', day:'每天', note:'佳音・美小'},
-  {name:'黃竑儒（3-1班）', group:'3年級', phone:'0929-730603', day:'每天', note:'佳音・文中'},
-  {name:'楊博宇（3-1班）', group:'3年級', phone:'0989-291351', day:'每天', note:'佳音・克拉克'},
-  {name:'吳羽軒（3-2班）', group:'3年級', phone:'0965-820996', day:'每天', note:'佳音・文中'},
-  {name:'高翊凱（4-1班）', group:'4年級', phone:'0985-362910', day:'每天', note:'佳音・文中'},
-  {name:'郭睿恩（4-1班）', group:'4年級', phone:'0918-229715', day:'每天', note:'佳音・文中'},
-  {name:'吳羿霆（4-3班）', group:'4年級', phone:'0928-430670', day:'每天', note:'佳音・文中'},
+  // 名單已清空 — 打開「新增學生」或「整批匯入」自己建立即可。
 ];
 // ============================================================================
 // END SCHOOL-SPECIFIC DATA — everything below this line is generic app logic.
@@ -962,6 +938,22 @@ function applyTitle(schoolName){
   document.querySelector('header h1').textContent = full;
 }
 
+// Sets the name shown under the home-screen icon — separate from the header
+// title above, since the icon label is short and gets truncated on the phone.
+function applyHomeName(name){
+  const label = name || CONFIG.appTitle;
+  const meta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if(meta) meta.setAttribute('content', label);
+}
+
+// Sets the app's accent color (top strip, buttons, active tabs/tags) —
+// takes effect the instant the page loads, so two lists look different at a
+// glance without depending on the phone's home-screen icon cache at all.
+function applyThemeColor(color){
+  const c = '#' + (color || '1F6F5C').replace('#', '');
+  document.documentElement.style.setProperty('--accent', c);
+}
+
 document.getElementById('btnGroups').addEventListener('click', async ()=>{
   const gradeCount = new Set(roster.map(s=>s.group).filter(Boolean)).size;
   document.getElementById('settingsSub').textContent = `目前共 ${roster.length} 位學生、${gradeCount} 個年級分類`;
@@ -971,7 +963,46 @@ document.getElementById('btnGroups').addEventListener('click', async ()=>{
   }catch(e){
     document.getElementById('schoolNameInput').value = '';
   }
+  try{
+    const rh = await Store.get(K('homeName'), false);
+    document.getElementById('homeNameInput').value = (rh && rh.value) || '';
+  }catch(e){
+    document.getElementById('homeNameInput').value = '';
+  }
+  let savedThemeColor = '1F6F5C';
+  try{
+    const rt = await Store.get(K('themeColor'), false);
+    if(rt && rt.value) savedThemeColor = rt.value;
+  }catch(e){}
+  document.getElementById('themeColorInput').value = '#' + savedThemeColor.replace('#','');
   settingsOverlay.classList.add('open');
+});
+
+document.getElementById('saveHomeName').addEventListener('click', async ()=>{
+  const name = document.getElementById('homeNameInput').value.trim();
+  try{
+    await Store.set(K('homeName'), name, false);
+    applyHomeName(name);
+    showToast('已儲存，重新「加入主畫面」才會看到新名字');
+  }catch(e){
+    showToast('儲存失敗，請重試');
+  }
+});
+
+// live preview as you pick a color, before saving
+document.getElementById('themeColorInput').addEventListener('input', (e)=>{
+  applyThemeColor(e.target.value);
+});
+
+document.getElementById('saveThemeColor').addEventListener('click', async ()=>{
+  const color = document.getElementById('themeColorInput').value.replace('#','');
+  try{
+    await Store.set(K('themeColor'), color, false);
+    applyThemeColor(color);
+    showToast('已儲存畫面顏色');
+  }catch(e){
+    showToast('儲存失敗，請重試');
+  }
 });
 
 document.getElementById('saveSchoolName').addEventListener('click', async ()=>{
@@ -1189,6 +1220,21 @@ window.addEventListener('pagehide', ()=>{
     savedSchoolName = (r && r.value) || '';
   }catch(e){ savedSchoolName = ''; }
   applyTitle(savedSchoolName);
+
+  let savedHomeName = '';
+  try{
+    const rh = await Store.get(K('homeName'), false);
+    savedHomeName = (rh && rh.value) || '';
+  }catch(e){ savedHomeName = ''; }
+  applyHomeName(savedHomeName);
+
+  let savedThemeColor = '1F6F5C';
+  try{
+    const rt = await Store.get(K('themeColor'), false);
+    if(rt && rt.value) savedThemeColor = rt.value;
+  }catch(e){}
+  applyThemeColor(savedThemeColor);
+
   document.getElementById('dateInput').value = currentDate;
   await loadRoster();
 
