@@ -1,3 +1,4 @@
+<!-- 程式版本：v1（2026-09-30）新增社團點名按鈕 — 上傳到 GitHub 後可對照這行確認是否為最新版 -->
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -26,6 +27,8 @@
     --absent-bg:#FBE6E6;
     --parent:#2E6FB8;
     --parent-bg:#E4ECF7;
+    --club:#B5560A;
+    --club-bg:#FDECD8;
     --idle-bg:#EEF1F0;
     --accent:#1F6F5C;
   }
@@ -54,6 +57,7 @@
   .chip.leave b{color:var(--leave);}
   .chip.absent b{color:var(--absent);}
   .chip.parent b{color:var(--parent);}
+  .chip.club b{color:var(--club);}
 
   .filters{padding:10px 16px 0; display:flex; gap:8px; overflow-x:auto; scrollbar-width:none;}
   .filters::-webkit-scrollbar{display:none;}
@@ -88,6 +92,7 @@
   .status-btn.leave{background:var(--leave-bg); color:var(--leave);}
   .status-btn.absent{background:var(--absent-bg); color:var(--absent);}
   .status-btn.parent{background:var(--parent-bg); color:var(--parent);}
+  .status-btn.club{background:var(--club-bg); color:var(--club);}
   .edit-btn{flex:0 0 auto; width:32px; height:32px; border:none; background:transparent; color:var(--ink-soft); font-size:16px;}
 
   .fab-bar{position:fixed; bottom:0; left:0; right:0; background:var(--bg); border-top:1px solid var(--line); padding:10px 16px calc(10px + env(safe-area-inset-bottom)); display:flex; gap:10px; z-index:20;}
@@ -135,6 +140,7 @@
   .hist-mark.leave{background:var(--leave-bg); color:var(--leave);}
   .hist-mark.absent{background:var(--absent-bg); color:var(--absent);}
   .hist-mark.parent{background:var(--parent-bg); color:var(--parent);}
+  .hist-mark.club{background:var(--club-bg); color:var(--club);}
   .toast{position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:9px 10px 9px 16px; border-radius:999px; font-size:13px; z-index:60; opacity:0; transition:opacity .25s; display:flex; align-items:center; gap:10px; max-width:88vw; white-space:nowrap;}
   .toast.show{opacity:1;}
   .toast #toastMsg{overflow:hidden; text-overflow:ellipsis;}
@@ -164,6 +170,7 @@
     <div class="chip leave"><b class="tabular" id="cntLeave">0</b><span>請假</span></div>
     <div class="chip absent"><b class="tabular" id="cntAbsent">0</b><span>未到</span></div>
     <div class="chip parent"><b class="tabular" id="cntParent">0</b><span>家長接</span></div>
+    <div class="chip club"><b class="tabular" id="cntClub">0</b><span>社團</span></div>
   </div>
   <div class="sub" id="summaryHint" style="display:none; text-align:center; margin-top:4px;"></div>
 </header>
@@ -227,6 +234,7 @@
     <div class="field"><label>接送日（選填）</label><input type="text" id="editDay"></div>
     <div class="field"><label>電話</label><input type="tel" id="editPhone"></div>
     <div class="field"><label>備註（選填）</label><input type="text" id="editNote"></div>
+    <div class="field"><label>社團日（選填，例如「二四」）</label><input type="text" id="editClubDays" placeholder="點名時按到「社團」會自動記錄在這裡"></div>
     <div class="sheet-actions">
       <button class="btn-secondary danger" id="deleteStudent" type="button">刪除學生</button>
       <button class="btn-primary" id="saveEdit" type="button">儲存</button>
@@ -267,6 +275,7 @@
     </div>
 
     <div class="sub" id="settingsSub">—</div>
+    <div class="sub" id="versionSub" style="margin-top:2px; opacity:.7;">—</div>
 
     <div class="hint" style="border-color:#F0C9C9; background:#FBEFEF; color:var(--absent); margin-top:16px;">
       <b>危險區域</b><br>
@@ -333,6 +342,11 @@ const CONFIG = {
   schoolId: 'zhenbei-guobei',    // unique per school — keeps each school's saved
                                   // data separate even if opened in the same browser
 };
+
+// Bump this on every update so it's easy to confirm which version is actually
+// live on a phone after re-deploying to GitHub Pages (Settings screen shows
+// it at the very bottom). Format: v<number> (<date>) <one-line summary>.
+const APP_VERSION = 'v1（2026-09-30）新增社團點名按鈕';
 // To change the home-screen icon graphic itself, edit the <link rel="icon">
 // and <link rel="apple-touch-icon"> data-URIs near the top of the HTML.
 // Remember to also update <title> and the apple-mobile-web-app-title <meta> tag
@@ -379,8 +393,8 @@ const Store = (function(){
   };
 })();
 
-const STATUS_CYCLE = ['idle','present','leave','absent','parent'];
-const STATUS_LABEL = {idle:'未點', present:'已到', leave:'請假', absent:'未到', parent:'家長接'};
+const STATUS_CYCLE = ['idle','present','leave','absent','parent','club'];
+const STATUS_LABEL = {idle:'未點', present:'已到', leave:'請假', absent:'未到', parent:'家長接', club:'社團'};
 
 const WEEKDAYS = ['一','二','三','四','五'];
 // Reads the free-text "day" field (e.g. '二五', '三五', '一四', '每天') and
@@ -390,6 +404,23 @@ function parseDays(dayStr){
   if(!dayStr) return [];
   if(dayStr.includes('每天')) return WEEKDAYS.slice();
   return WEEKDAYS.filter(w => dayStr.includes(w));
+}
+
+function weekdayOf(dateStr){
+  return ['日','一','二','三','四','五','六'][new Date(dateStr).getDay()];
+}
+
+// Students in an after-school club don't need pickup on club days. Tapping
+// a student's status to "社團" remembers that weekday on the student record
+// (s.clubDays, e.g. "二四"), so every future date that falls on the same
+// weekday defaults to "社團" automatically — no need to re-tap it every
+// week. A date that has an explicit saved status (including an explicit
+// "未點"/idle from a long-press reset) always wins over this default.
+function statusForDate(s, dateStr, rec){
+  if(rec && Object.prototype.hasOwnProperty.call(rec, s.id)) return rec[s.id];
+  const wd = weekdayOf(dateStr);
+  if((s.clubDays||'').includes(wd)) return 'club';
+  return 'idle';
 }
 
 let roster = [];
@@ -545,19 +576,21 @@ function escapeHtml(s){
 
 function renderSummary(){
   const items = getVisibleItems();
-  let present=0, leave=0, absent=0, parent=0;
+  let present=0, leave=0, absent=0, parent=0, club=0;
   items.forEach(s=>{
-    const st = attendance[s.id] || 'idle';
+    const st = statusForDate(s, currentDate, attendance);
     if(st==='present') present++;
     else if(st==='leave') leave++;
     else if(st==='absent') absent++;
     else if(st==='parent') parent++;
+    else if(st==='club') club++;
   });
   document.getElementById('cntTotal').textContent = items.length;
   document.getElementById('cntPresent').textContent = present;
   document.getElementById('cntLeave').textContent = leave;
   document.getElementById('cntAbsent').textContent = absent;
   document.getElementById('cntParent').textContent = parent;
+  document.getElementById('cntClub').textContent = club;
 
   const hint = document.getElementById('summaryHint');
   if(selectedDay !== 'all'){
@@ -629,7 +662,7 @@ function timeSlotForDay(s, dayChar){
 }
 
 function cardHtml(s){
-  const st = attendance[s.id] || 'idle';
+  const st = statusForDate(s, currentDate, attendance);
   return `<div class="card" data-id="${s.id}">
       <div class="info">
         <div class="name">${escapeHtml(s.name)} ${s.group?`<span class="tag">${escapeHtml(s.group)}</span>`:''}</div>
@@ -674,8 +707,19 @@ function renderList(){
     let pressTimer = null;
     let longPressed = false;
 
+    // Setting a student to "社團" also remembers today's weekday on their
+    // record (s.clubDays), so the same weekday defaults to "社團" again on
+    // every future date automatically (see statusForDate).
     const applyStatus = (id, next, btnEl)=>{
       attendance[id] = next;
+      if(next === 'club'){
+        const s = roster.find(x=>x.id===id);
+        const wd = weekdayOf(currentDate);
+        if(s && !(s.clubDays||'').includes(wd)){
+          s.clubDays = (s.clubDays||'') + wd;
+          saveRoster();
+        }
+      }
       btnEl.className = 'status-btn ' + next;
       btnEl.textContent = STATUS_LABEL[next];
       renderSummary();
@@ -687,9 +731,9 @@ function renderList(){
       pressTimer = setTimeout(()=>{
         longPressed = true;
         const id = btn.dataset.toggle;
-        const prev = attendance[id] || 'idle';
-        if(prev === 'idle') return;
         const s = roster.find(x=>x.id===id);
+        const prev = s ? statusForDate(s, currentDate, attendance) : 'idle';
+        if(prev === 'idle') return;
         applyStatus(id, 'idle', btn);
         if(navigator.vibrate) navigator.vibrate([10,30,10]);
         showUndoToast(`${s?s.name:''} 已重設為未點`, '復原', ()=> applyStatus(id, prev, btn));
@@ -703,9 +747,9 @@ function renderList(){
     btn.addEventListener('click', ()=>{
       if(longPressed){ longPressed = false; return; } // long-press already handled it
       const id = btn.dataset.toggle;
-      const prev = attendance[id] || 'idle';
-      const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(prev)+1) % STATUS_CYCLE.length];
       const s = roster.find(x=>x.id===id);
+      const prev = s ? statusForDate(s, currentDate, attendance) : 'idle';
+      const next = STATUS_CYCLE[(STATUS_CYCLE.indexOf(prev)+1) % STATUS_CYCLE.length];
       applyStatus(id, next, btn);
       if(navigator.vibrate) navigator.vibrate(8);
       showUndoToast(`${s?s.name:''} → ${STATUS_LABEL[next]}`, '復原', ()=> applyStatus(id, prev, btn));
@@ -725,6 +769,7 @@ function openEdit(id){
   document.getElementById('editDay').value = s.day || '';
   document.getElementById('editPhone').value = s.phone || '';
   document.getElementById('editNote').value = s.note || '';
+  document.getElementById('editClubDays').value = s.clubDays || '';
   document.getElementById('editOverlay').classList.add('open');
 }
 
@@ -761,12 +806,12 @@ document.getElementById('searchInput').addEventListener('input', ()=>{ renderLis
 document.getElementById('btnMarkAllPresent').addEventListener('click', ()=>{
   const items = getVisibleItems();
   if(items.length === 0){ showToast('目前沒有符合的學生'); return; }
-  // skip anyone already marked 請假 or 家長接 — bulk "mark present" shouldn't touch those
-  const PROTECTED = ['leave', 'parent'];
-  const toChange = items.filter(s => !PROTECTED.includes(attendance[s.id] || 'idle'));
-  if(toChange.length === 0){ showToast('目前都是請假／家長接中，沒有可標記的學生'); return; }
+  // skip anyone already marked 請假／家長接／社團 — bulk "mark present" shouldn't touch those
+  const PROTECTED = ['leave', 'parent', 'club'];
+  const toChange = items.filter(s => !PROTECTED.includes(statusForDate(s, currentDate, attendance)));
+  if(toChange.length === 0){ showToast('目前都是請假／家長接／社團中，沒有可標記的學生'); return; }
   const prevSnapshot = {};
-  toChange.forEach(s=>{ prevSnapshot[s.id] = attendance[s.id] || 'idle'; });
+  toChange.forEach(s=>{ prevSnapshot[s.id] = statusForDate(s, currentDate, attendance); });
   toChange.forEach(s=>{ attendance[s.id] = 'present'; });
   renderList();
   renderSummary();
@@ -774,7 +819,7 @@ document.getElementById('btnMarkAllPresent').addEventListener('click', ()=>{
   if(navigator.vibrate) navigator.vibrate(10);
   const skipped = items.length - toChange.length;
   const msg = skipped > 0
-    ? `已將 ${toChange.length} 位標記為已到（${skipped} 位請假／家長接未變動）`
+    ? `已將 ${toChange.length} 位標記為已到（${skipped} 位請假／家長接／社團未變動）`
     : `已將 ${toChange.length} 位標記為已到`;
   showUndoToast(msg, '復原', ()=>{
     toChange.forEach(s=>{ attendance[s.id] = prevSnapshot[s.id]; });
@@ -786,7 +831,7 @@ document.getElementById('btnClearAll').addEventListener('click', ()=>{
   const items = getVisibleItems();
   if(items.length === 0){ showToast('目前沒有符合的學生'); return; }
   const prevSnapshot = {};
-  items.forEach(s=>{ prevSnapshot[s.id] = attendance[s.id] || 'idle'; });
+  items.forEach(s=>{ prevSnapshot[s.id] = statusForDate(s, currentDate, attendance); });
   items.forEach(s=>{ delete attendance[s.id]; });
   renderList();
   renderSummary();
@@ -859,6 +904,7 @@ document.getElementById('saveEdit').addEventListener('click', async ()=>{
   s.day = document.getElementById('editDay').value.trim();
   s.phone = document.getElementById('editPhone').value.trim();
   s.note = document.getElementById('editNote').value.trim();
+  s.clubDays = document.getElementById('editClubDays').value.trim();
   await saveRoster();
   editOverlay.classList.remove('open');
   renderFilters(); renderList(); renderSummary();
@@ -884,6 +930,7 @@ function formatReportText(dateLabel, byStatus){
   text += section('請假', byStatus.leave) + '\n';
   text += section('未到', byStatus.absent) + '\n';
   text += section('家長接', byStatus.parent) + '\n';
+  text += section('社團', byStatus.club) + '\n';
   if(byStatus.idle.length) text += section('尚未點名', byStatus.idle);
   return text;
 }
@@ -896,7 +943,7 @@ function formatSelectedReportText(dateLabel, byStatus, cats){
     if(arr.length === 0) return `${label}：無\n`;
     return `${label}（${arr.length}）：\n` + arr.map(n=>'・'+n).join('\n') + '\n';
   };
-  const LABELS = {present:'已到', leave:'請假', absent:'未到', parent:'家長接', idle:'尚未點名'};
+  const LABELS = {present:'已到', leave:'請假', absent:'未到', parent:'家長接', club:'社團', idle:'尚未點名'};
   let text = `點名紀錄 ${dateLabel}\n\n`;
   cats.forEach((key, i) => {
     text += section(LABELS[key], byStatus[key]);
@@ -907,9 +954,9 @@ function formatSelectedReportText(dateLabel, byStatus, cats){
 
 // --- share / copy today's list ---
 document.getElementById('btnShare').addEventListener('click', ()=>{
-  const byStatus = {present:[], leave:[], absent:[], parent:[], idle:[]};
+  const byStatus = {present:[], leave:[], absent:[], parent:[], club:[], idle:[]};
   roster.forEach(s=>{
-    const st = attendance[s.id] || 'idle';
+    const st = statusForDate(s, currentDate, attendance);
     byStatus[st].push(s.name);
   });
   const text = formatReportText(currentDate, byStatus);
@@ -957,6 +1004,7 @@ function applyThemeColor(color){
 document.getElementById('btnGroups').addEventListener('click', async ()=>{
   const gradeCount = new Set(roster.map(s=>s.group).filter(Boolean)).size;
   document.getElementById('settingsSub').textContent = `目前共 ${roster.length} 位學生、${gradeCount} 個年級分類`;
+  document.getElementById('versionSub').textContent = `程式版本：${APP_VERSION}`;
   try{
     const r = await Store.get(K('schoolName'), false);
     document.getElementById('schoolNameInput').value = (r && r.value) || '';
@@ -1079,6 +1127,7 @@ const REPORT_CATS = [
   { key: 'leave', label: '請假' },
   { key: 'absent', label: '未到' },
   { key: 'parent', label: '家長接' },
+  { key: 'club', label: '社團' },
   { key: 'idle', label: '尚未點名' },
 ];
 let selectedCats = new Set(REPORT_CATS.map(c => c.key)); // all selected by default
@@ -1114,9 +1163,9 @@ async function renderDailyReport(){
     rec = r ? JSON.parse(r.value) : {};
   }catch(e){ rec = {}; }
 
-  const groupsBy = {present:[], leave:[], absent:[], parent:[], idle:[]};
+  const groupsBy = {present:[], leave:[], absent:[], parent:[], club:[], idle:[]};
   sortByGradeClass(roster).forEach(s=>{
-    const st = rec[s.id] || 'idle';
+    const st = statusForDate(s, histDate, rec);
     groupsBy[st].push(s.name);
   });
 
@@ -1128,6 +1177,7 @@ async function renderDailyReport(){
     <div class="rchip" style="color:var(--leave)"><b>${groupsBy.leave.length}</b>請假</div>
     <div class="rchip" style="color:var(--absent)"><b>${groupsBy.absent.length}</b>未到</div>
     <div class="rchip" style="color:var(--parent)"><b>${groupsBy.parent.length}</b>家長接</div>
+    <div class="rchip" style="color:var(--club)"><b>${groupsBy.club.length}</b>社團</div>
   </div>`;
 
   const section = (label, color, list)=>{
@@ -1144,6 +1194,7 @@ async function renderDailyReport(){
   html += section('請假', 'var(--leave)', groupsBy.leave);
   html += section('未到', 'var(--absent)', groupsBy.absent);
   html += section('家長接', 'var(--parent)', groupsBy.parent);
+  html += section('社團', 'var(--club)', groupsBy.club);
   if(groupsBy.idle.length) html += section('尚未點名', 'var(--ink-soft)', groupsBy.idle);
 
   body.innerHTML = html;
@@ -1181,7 +1232,7 @@ async function renderGridHistory(){
         records[d] = r ? JSON.parse(r.value) : {};
       }catch(e){ records[d] = {}; }
     }
-    const MARK = {present:'到', leave:'假', absent:'X', parent:'接'};
+    const MARK = {present:'到', leave:'假', absent:'X', parent:'接', club:'社'};
     let html = '<table class="hist-table"><thead><tr><th class="hist-name">姓名</th>';
     dates.forEach(d=>{ html += `<th>${d.slice(5).replace('-','/')}</th>`; });
     html += '</tr></thead><tbody>';
